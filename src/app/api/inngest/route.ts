@@ -4,10 +4,16 @@ import {
   clerkUserCreated,
   clerkUserUpdated,
   clerkUserDeleted,
+  checkLowStock,
 } from "@/lib/inngest/functions";
 
 // Create an API that serves zero-dependency HTTP endpoints to Inngest
 export const { GET, POST, PUT } = serve({
   client: inngest,
-  functions: [clerkUserCreated, clerkUserUpdated, clerkUserDeleted],
+  functions: [
+    clerkUserCreated,
+    clerkUserUpdated,
+    clerkUserDeleted,
+    checkLowStock,
+  ],
 });

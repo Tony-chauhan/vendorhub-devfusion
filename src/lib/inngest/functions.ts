@@ -82,3 +82,52 @@ export const clerkUserDeleted = inngest.createFunction(
     return { status: "success", deletedClerkId: id };
   }
 );
+
+// 4. Low-stock inventory monitoring background job triggered after checkout purchases
+export const checkLowStock = inngest.createFunction(
+  { 
+    id: "check-low-stock",
+    triggers: [{ event: "order/placed" }]
+  },
+  async ({ event, step }) => {
+    const { orderId } = event.data;
+
+    // Fetch order line-items from database
+    const orderItems = await step.run("fetch-order-items", async () => {
+      return await prisma.orderItem.findMany({
+        where: { orderId },
+        include: {
+          product: {
+            include: {
+              store: true,
+            },
+          },
+        },
+      });
+    });
+
+    const alerts = [];
+
+    // Analyze inventory thresholds
+    for (const item of orderItems) {
+      if (item.product.stock <= 3) {
+        alerts.push({
+          productId: item.productId,
+          productName: item.product.name,
+          currentStock: item.product.stock,
+          storeName: item.product.store.name,
+        });
+      }
+    }
+
+    // Simulate sending low stock notification alerts to vendors
+    if (alerts.length > 0) {
+      await step.run("trigger-low-stock-alert", async () => {
+        console.warn(`[Inngest Background Alert] Low stock detected for order ${orderId}:`, alerts);
+        return { alerted: true, alerts };
+      });
+    }
+
+    return { status: "processed", alertsTriggeredCount: alerts.length, alerts };
+  }
+);
