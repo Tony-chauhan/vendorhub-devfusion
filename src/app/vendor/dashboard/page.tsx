@@ -15,9 +15,11 @@ import {
   Sparkles, 
   MapPin, 
   X,
-  Clock
+  Clock,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { 
   AreaChart, 
   Area, 
