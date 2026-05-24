@@ -11,10 +11,12 @@ import {
   ChevronRight, 
   Loader2, 
   CheckCircle,
-  Truck
+  Truck,
+  AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
+import { motion } from "framer-motion";
 import { createOrder } from "@/app/actions/orders";
 
 // Mock cart items for sandbox representation
