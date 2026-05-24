@@ -106,7 +106,12 @@ export const checkLowStock = inngest.createFunction(
       });
     });
 
-    const alerts = [];
+    const alerts: Array<{
+      productId: string;
+      productName: string;
+      currentStock: number;
+      storeName: string;
+    }> = [];
 
     // Analyze inventory thresholds
     for (const item of orderItems) {
