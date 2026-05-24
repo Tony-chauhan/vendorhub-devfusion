@@ -3,8 +3,10 @@ import { prisma } from "../prisma";
 
 // 1. Sync User Creation from Clerk Webhook
 export const clerkUserCreated = inngest.createFunction(
-  { id: "sync-clerk-user-created" },
-  { event: "clerk/user.created" },
+  { 
+    id: "sync-clerk-user-created",
+    triggers: [{ event: "clerk/user.created" }]
+  },
   async ({ event, step }) => {
     const { id, email_addresses, first_name, last_name } = event.data;
     const email = email_addresses?.[0]?.email_address;
@@ -37,8 +39,10 @@ export const clerkUserCreated = inngest.createFunction(
 
 // 2. Sync User Updates from Clerk Webhook
 export const clerkUserUpdated = inngest.createFunction(
-  { id: "sync-clerk-user-updated" },
-  { event: "clerk/user.updated" },
+  { 
+    id: "sync-clerk-user-updated",
+    triggers: [{ event: "clerk/user.updated" }]
+  },
   async ({ event, step }) => {
     const { id, email_addresses, first_name, last_name } = event.data;
     const email = email_addresses?.[0]?.email_address;
@@ -62,8 +66,10 @@ export const clerkUserUpdated = inngest.createFunction(
 
 // 3. Sync User Deletions from Clerk Webhook
 export const clerkUserDeleted = inngest.createFunction(
-  { id: "sync-clerk-user-deleted" },
-  { event: "clerk/user.deleted" },
+  { 
+    id: "sync-clerk-user-deleted",
+    triggers: [{ event: "clerk/user.deleted" }]
+  },
   async ({ event, step }) => {
     const { id } = event.data;
 
