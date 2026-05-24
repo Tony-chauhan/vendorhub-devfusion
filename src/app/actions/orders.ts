@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
+import { inngest } from "@/lib/inngest/client";
 
 interface OrderItemInput {
   productId: string;
@@ -67,6 +68,18 @@ export async function createOrder(data: CreateOrderInput) {
           },
         },
       });
+    }
+
+    // 6. Asynchronously trigger Inngest event for background inventory audits and notifications
+    try {
+      await inngest.send({
+        name: "order/placed",
+        data: {
+          orderId: order.id,
+        },
+      });
+    } catch (e) {
+      console.error("Failed to send order/placed event to Inngest:", e);
     }
 
     return { 
