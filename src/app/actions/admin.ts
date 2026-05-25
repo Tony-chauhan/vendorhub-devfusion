@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
 
+const dbUrl = process.env.DATABASE_URL;
+const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+
 // 1. Helper to assert that the caller is the platform administrator
 export async function checkAdmin() {
   try {
@@ -22,6 +25,10 @@ export async function getPendingStores() {
   const isAdmin = await checkAdmin();
   if (!isAdmin) {
     return { success: false, error: "Unauthorized access to admin portal" };
+  }
+
+  if (isMockDb) {
+    return { success: true, stores: [] };
   }
 
   try {
@@ -45,6 +52,10 @@ export async function updateStoreStatus(storeId: string, status: "APPROVED" | "R
     return { success: false, error: "Unauthorized" };
   }
 
+  if (isMockDb) {
+    return { success: true };
+  }
+
   try {
     const store = await prisma.store.update({
       where: { id: storeId },
@@ -61,6 +72,19 @@ export async function getAdminAnalytics() {
   const isAdmin = await checkAdmin();
   if (!isAdmin) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  if (isMockDb) {
+    return {
+      success: true,
+      analytics: {
+        totalSales: 23620,
+        totalNet: 21258,
+        platformCommission: 2362,
+        activeVendors: 3,
+        pendingVendors: 2
+      }
+    };
   }
 
   try {
@@ -111,6 +135,10 @@ export async function getRefundRequests() {
     return { success: false, error: "Unauthorized" };
   }
 
+  if (isMockDb) {
+    return { success: true, refunds: [] };
+  }
+
   try {
     const refunds = await prisma.refund.findMany({
       include: {
@@ -133,6 +161,10 @@ export async function processRefund(refundId: string, status: "APPROVED" | "REJE
   const isAdmin = await checkAdmin();
   if (!isAdmin) {
     return { success: false, error: "Unauthorized" };
+  }
+
+  if (isMockDb) {
+    return { success: true };
   }
 
   try {

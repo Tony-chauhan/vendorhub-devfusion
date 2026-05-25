@@ -20,6 +20,29 @@ export async function addProduct(data: AddProductInput) {
       return { success: false, error: "Authentication required to add products" };
     }
 
+    const dbUrl = process.env.DATABASE_URL;
+    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+
+    if (isMockDb) {
+      console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating product insertion.");
+      return { 
+        success: true, 
+        product: { 
+          id: `mock_product_${Math.floor(100000 + Math.random() * 900000)}`, 
+          name: data.name,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          category: data.category,
+          images: data.images.length > 0 ? data.images : ["https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80"],
+          storeId: "mock_store_id",
+          location: "Mumbai",
+          createdAt: new Date(),
+          updatedAt: new Date()
+        } 
+      };
+    }
+
     // 2. Fetch vendor database profile and store
     const user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
@@ -60,6 +83,14 @@ export async function deleteProduct(productId: string) {
     const clerkUser = await currentUser();
     if (!clerkUser) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    const dbUrl = process.env.DATABASE_URL;
+    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+
+    if (isMockDb) {
+      console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating product deletion.");
+      return { success: true };
     }
 
     // 2. Perform delete

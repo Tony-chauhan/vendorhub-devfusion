@@ -24,6 +24,21 @@ export async function createOrder(data: CreateOrderInput) {
       return { success: false, error: "Authentication required to checkout" };
     }
 
+    // Failsafe Database Check: Simulate checkout if database credentials are mock
+    const dbUrl = process.env.DATABASE_URL;
+    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+
+    if (isMockDb) {
+      console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating checkout order insertion.");
+      const orderNumber = `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
+      return {
+        success: true,
+        orderId: `mock_order_${Math.floor(100000 + Math.random() * 900000)}`,
+        orderNumber,
+        netAmount: parseFloat((data.totalAmount * 0.9).toFixed(2))
+      };
+    }
+
     // 2. Fetch corresponding database user profile
     const user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
