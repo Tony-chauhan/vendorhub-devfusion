@@ -341,81 +341,81 @@ export default function ProductBrowse() {
   };
 
   return (
-    <div className="w-full min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans relative">
+    <div className="w-full min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans relative">
       
-      {/* 🚀 Sleek Glassmorphic Navbar */}
-      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-slate-900/60 border-b border-slate-800/80 px-6 py-4 flex items-center justify-between">
+      {/* 🚀 Sleek Glassmorphic Navbar (Apple-Style White Glass) */}
+      <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/75 border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-purple-500 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/20">
+          <div className="bg-gradient-to-tr from-purple-600 to-indigo-600 p-2.5 rounded-xl shadow-lg shadow-indigo-500/10">
             <Sparkles className="h-6 w-6 text-white" />
           </div>
           <div>
-            <span className="font-extrabold text-2xl bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-300 to-indigo-500 tracking-tight">
+            <span className="font-extrabold text-2xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-700 tracking-tight">
               VendorHub
             </span>
-            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-widest text-slate-500 ml-2 bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700/50">
+            <span className="hidden sm:inline-block text-[10px] uppercase font-bold tracking-widest text-slate-400 ml-2 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
               DevFusion 2.0
             </span>
           </div>
         </div>
 
         {/* Hyperlocal location indicator */}
-        <div className="hidden lg:flex items-center gap-2 bg-slate-950/50 px-4 py-2 rounded-full border border-slate-800/80">
-          <MapPin className="h-4 w-4 text-purple-400" />
-          <span className="text-sm font-medium text-slate-300">
-            Selected Hub: <strong className="text-indigo-400">{selectedLocation === "All" ? "Everywhere (India)" : selectedLocation}</strong>
+        <div className="hidden lg:flex items-center gap-2 bg-slate-100/60 px-4 py-2 rounded-full border border-slate-200">
+          <MapPin className="h-4 w-4 text-purple-600" />
+          <span className="text-sm font-medium text-slate-600">
+            Selected Hub: <strong className="text-indigo-600">{selectedLocation === "All" ? "Everywhere (India)" : selectedLocation}</strong>
           </span>
         </div>
 
         {/* Global Cart & Wishlist counters */}
         <div className="flex items-center gap-4">
-          <button className="relative p-2.5 rounded-full hover:bg-slate-800/70 border border-transparent hover:border-slate-700/50 transition-all text-slate-400 hover:text-slate-100">
+          <button className="relative p-2.5 rounded-full hover:bg-slate-100/70 border border-transparent hover:border-slate-200/55 transition-all text-slate-500 hover:text-slate-800">
             <Heart className="h-5.5 w-5.5" />
             {wishlistedIds.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse">
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center animate-pulse shadow-md shadow-rose-500/20">
                 {wishlistedIds.length}
               </span>
             )}
           </button>
           
-          <Link href="/checkout" className="relative p-2.5 rounded-full hover:bg-slate-800/70 border border-transparent hover:border-slate-700/50 transition-all text-slate-400 hover:text-slate-100">
+          <Link href="/checkout" className="relative p-2.5 rounded-full hover:bg-slate-100/70 border border-transparent hover:border-slate-200/55 transition-all text-slate-500 hover:text-slate-800">
             <ShoppingBag className="h-5.5 w-5.5" />
             {cartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-indigo-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <span className="absolute -top-1 -right-1 bg-indigo-600 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-indigo-600/20">
                 {cartCount}
               </span>
             )}
           </Link>
 
-          <Link href="/vendor/dashboard" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 hover:scale-105 active:scale-95 transition-all text-center">
+          <Link href="/vendor/dashboard" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/35 hover:scale-105 active:scale-95 transition-all text-center">
             Vendor Portal
           </Link>
         </div>
       </header>
 
-      {/* 🔮 Rich Hero Banner */}
-      <section className="relative w-full py-20 px-6 overflow-hidden flex flex-col items-center justify-center border-b border-slate-900">
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-600/10 rounded-full blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 left-10 w-[300px] h-[300px] bg-purple-600/10 rounded-full blur-[100px] pointer-events-none" />
+      {/* 🔮 Rich Hero Banner (Soft Apple gradients) */}
+      <section className="relative w-full py-20 px-6 overflow-hidden flex flex-col items-center justify-center border-b border-slate-200/80 bg-white">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-indigo-500/5 rounded-full blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-10 left-10 w-[300px] h-[300px] bg-purple-500/5 rounded-full blur-[100px] pointer-events-none" />
         
         <div className="max-w-4xl text-center flex flex-col items-center gap-6 z-10">
           <motion.div 
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider uppercase flex items-center gap-2"
+            className="bg-indigo-50 border border-indigo-100 text-indigo-600 px-4 py-1.5 rounded-full text-xs font-bold tracking-wider uppercase flex items-center gap-2"
           >
-            <Sparkles className="h-3.5 w-3.5" /> Hyperlocal E-Commerce Redefined
+            <Sparkles className="h-3.5 w-3.5 text-indigo-500 animate-pulse" /> Hyperlocal E-Commerce Redefined
           </motion.div>
 
           <motion.h1 
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-4xl sm:text-6xl font-black leading-tight tracking-tight text-white"
+            className="text-4xl sm:text-6xl font-black leading-tight tracking-tight text-slate-900"
           >
             Smarter shopping from <br />
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-400 via-indigo-300 to-indigo-500">
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-700">
               local vendors
             </span> nearby.
           </motion.h1>
@@ -424,7 +424,7 @@ export default function ProductBrowse() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-slate-400 text-lg max-w-2xl leading-relaxed"
+            className="text-slate-500 text-lg max-w-2xl leading-relaxed"
           >
             Experience a modern, high-performance marketplace powered by serverless technology, 
             instant background notifications, optimized assets, and Gemini AI search query expansions.
@@ -435,11 +435,11 @@ export default function ProductBrowse() {
       {/* 🔍 Interactive Filter & Search Section */}
       <section className="w-full max-w-7xl mx-auto px-6 py-12 flex-1 grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* 🛠️ Glassmorphic Left Sidebar Filters */}
-        <aside className="lg:col-span-1 bg-slate-900/40 border border-slate-800/80 p-6 rounded-3xl backdrop-blur-md flex flex-col gap-8 h-fit">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
-            <h2 className="font-bold text-lg text-white flex items-center gap-2">
-              <SlidersHorizontal className="h-4.5 w-4.5 text-purple-400" /> Filters
+        {/* 🛠️ Glassmorphic Left Sidebar Filters (White Apple Card) */}
+        <aside className="lg:col-span-1 bg-white border border-slate-200/80 p-6 rounded-3xl backdrop-blur-md flex flex-col gap-8 h-fit shadow-md shadow-slate-100">
+          <div className="flex items-center justify-between pb-4 border-b border-slate-200/85">
+            <h2 className="font-bold text-lg text-slate-900 flex items-center gap-2">
+              <SlidersHorizontal className="h-4.5 w-4.5 text-purple-600" /> Filters
             </h2>
             <button 
               onClick={() => {
@@ -451,7 +451,7 @@ export default function ProductBrowse() {
                 setAiSynonyms([]);
                 setSelectedSynonym(null);
               }}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors font-semibold cursor-pointer"
+              className="text-xs text-slate-400 hover:text-slate-600 transition-colors font-semibold cursor-pointer"
             >
               Reset All
             </button>
@@ -467,14 +467,14 @@ export default function ProductBrowse() {
                   onClick={() => setSelectedLocation(loc)}
                   className={`w-full text-left text-sm px-4 py-2.5 rounded-xl border transition-all flex items-center justify-between cursor-pointer ${
                     selectedLocation === loc
-                      ? "bg-indigo-600/10 border-indigo-500/50 text-indigo-300 font-semibold"
-                      : "bg-slate-950/20 border-slate-800/50 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200"
+                      ? "bg-indigo-50 border-indigo-500 text-white font-semibold shadow-md shadow-indigo-500/10"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100/50 hover:text-slate-800"
                   }`}
                 >
                   <span className="flex items-center gap-2">
                     <MapPin className="h-3.5 w-3.5" /> {loc === "All" ? "All Locations" : loc}
                   </span>
-                  {selectedLocation === loc && <Check className="h-4 w-4" />}
+                  {selectedLocation === loc && <Check className="h-4 w-4 text-white" />}
                 </button>
               ))}
             </div>
@@ -488,10 +488,10 @@ export default function ProductBrowse() {
                 <button
                   key={cat}
                   onClick={() => setSelectedCategory(cat)}
-                  className={`text-xs px-3.5 py-2 rounded-xl border transition-all font-medium cursor-pointer ${
+                  className={`text-xs px-3.5 py-2 rounded-xl border transition-all font-bold cursor-pointer ${
                     selectedCategory === cat
-                      ? "bg-purple-600/10 border-purple-500/50 text-purple-300 font-bold"
-                      : "bg-slate-950/20 border-slate-800/50 text-slate-400 hover:bg-slate-800/30 hover:text-slate-200"
+                      ? "bg-purple-50 border-purple-500 text-white shadow-md shadow-purple-500/10"
+                      : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
                   }`}
                 >
                   {cat === "All" ? "All Items" : cat}
@@ -504,7 +504,7 @@ export default function ProductBrowse() {
           <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-400">
               <span>Max Price</span>
-              <span className="text-indigo-400 font-extrabold text-sm">${maxPrice}</span>
+              <span className="text-indigo-600 font-extrabold text-sm">${maxPrice}</span>
             </div>
             <input
               type="range"
@@ -512,9 +512,9 @@ export default function ProductBrowse() {
               max="1500"
               value={maxPrice}
               onChange={(e) => setMaxPrice(Number(e.target.value))}
-              className="w-full accent-indigo-500 bg-slate-800 h-1.5 rounded-full cursor-pointer"
+              className="w-full accent-indigo-600 bg-slate-200 h-1.5 rounded-full cursor-pointer"
             />
-            <div className="flex items-center justify-between text-[10px] text-slate-500 font-bold">
+            <div className="flex items-center justify-between text-[10px] text-slate-400 font-bold">
               <span>$10</span>
               <span>$1500</span>
             </div>
@@ -530,8 +530,8 @@ export default function ProductBrowse() {
                   onClick={() => setMinRating(rating)}
                   className={`text-[10px] py-2 rounded-lg border text-center transition-all font-bold cursor-pointer ${
                     minRating === rating
-                      ? "bg-amber-500/10 border-amber-500/50 text-amber-400"
-                      : "bg-slate-950/20 border-slate-800/50 text-slate-500 hover:bg-slate-800/30 hover:text-slate-300"
+                      ? "bg-amber-500/10 border-amber-500/30 text-amber-600"
+                      : "bg-slate-50 border-slate-200 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
                   }`}
                 >
                   {rating === 0 ? "Any" : `${rating}★`}
@@ -547,8 +547,8 @@ export default function ProductBrowse() {
           {/* Search bar with instant AI helper notification */}
           <div className="flex flex-col gap-3">
             <div className="relative w-full flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-500" />
+              <div className="relative flex-1 shadow-sm">
+                <Search className="absolute left-4.5 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
                 <input
                   type="text"
                   placeholder="Search products, categories, or try synonyms like 'phone', 'kesar', 'shawl'..."
@@ -560,7 +560,7 @@ export default function ProductBrowse() {
                       setSelectedSynonym(null);
                     }
                   }}
-                  className="w-full bg-slate-900/50 border border-slate-800/80 hover:border-slate-700/50 focus:border-indigo-500/80 rounded-2xl py-4 pl-13 pr-6 text-sm text-slate-100 placeholder-slate-500 focus:outline-none transition-all shadow-inner focus:shadow-indigo-500/5"
+                  className="w-full bg-white border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-2xl py-4 pl-13 pr-6 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all shadow-inner"
                 />
               </div>
 
@@ -568,7 +568,7 @@ export default function ProductBrowse() {
               <button
                 onClick={handleAISearchRefine}
                 disabled={isAiExpanding || !searchQuery.trim()}
-                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white font-bold text-xs px-5 py-4 rounded-2xl transition-all flex items-center gap-1.5 shrink-0 shadow-lg shadow-indigo-600/10 cursor-pointer disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
+                className="bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-200 text-white font-bold text-xs px-5 py-4 rounded-2xl transition-all flex items-center gap-1.5 shrink-0 shadow-lg shadow-indigo-600/10 cursor-pointer disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isAiExpanding ? (
                   <>
@@ -576,7 +576,7 @@ export default function ProductBrowse() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="h-4 w-4 text-purple-300" /> Let AI Expand
+                    <Sparkles className="h-4 w-4 text-purple-200" /> Let AI Expand
                   </>
                 )}
               </button>
@@ -584,9 +584,9 @@ export default function ProductBrowse() {
             
             {/* Real-time dynamic synonym feedback chip list */}
             {aiSynonyms.length > 0 && (
-              <div className="flex flex-col gap-2 p-4 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                <div className="flex items-center gap-2 text-xs text-indigo-300 font-bold">
-                  <Sparkles className="h-4 w-4 text-indigo-400" />
+              <div className="flex flex-col gap-2 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/80">
+                <div className="flex items-center gap-2 text-xs text-indigo-600 font-bold">
+                  <Sparkles className="h-4 w-4 text-indigo-500 animate-pulse" />
                   <span>Gemini Search Synonym Engine is active! Select a refined semantic keyword:</span>
                 </div>
                 <div className="flex flex-wrap gap-2 mt-1">
@@ -596,8 +596,8 @@ export default function ProductBrowse() {
                       onClick={() => setSelectedSynonym(syn)}
                       className={`text-[10px] font-bold px-3 py-1.5 rounded-full border transition-all cursor-pointer ${
                         selectedSynonym === syn
-                          ? "bg-indigo-500 border-indigo-400 text-white shadow-md shadow-indigo-500/20"
-                          : "bg-slate-950/40 border-slate-800/80 text-slate-400 hover:border-slate-700 hover:text-slate-200"
+                          ? "bg-indigo-600 border-indigo-500 text-white shadow-md shadow-indigo-500/10"
+                          : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-800"
                       }`}
                     >
                       {syn}
@@ -608,7 +608,7 @@ export default function ProductBrowse() {
                       setAiSynonyms([]);
                       setSelectedSynonym(null);
                     }}
-                    className="text-[9px] font-extrabold text-rose-400 hover:text-rose-300 uppercase tracking-widest ml-auto py-1"
+                    className="text-[9px] font-extrabold text-rose-500 hover:text-rose-600 uppercase tracking-widest ml-auto py-1"
                   >
                     Clear AI Filters
                   </button>
@@ -618,19 +618,19 @@ export default function ProductBrowse() {
           </div>
 
           {/* Results summary bar */}
-          <div className="flex items-center justify-between text-sm text-slate-400">
+          <div className="flex items-center justify-between text-sm text-slate-500">
             <span>
-              Showing <strong className="text-slate-200">{filteredProducts.length}</strong> products
+              Showing <strong className="text-slate-800">{filteredProducts.length}</strong> products
             </span>
             {(selectedLocation !== "All" || selectedSynonym) && (
               <span className="flex items-center gap-1.5">
                 {selectedLocation !== "All" && (
                   <span>
-                    Hub: <strong className="text-purple-400">{selectedLocation}</strong>
+                    Hub: <strong className="text-purple-600 font-bold">{selectedLocation}</strong>
                   </span>
                 )}
                 {selectedSynonym && (
-                  <span className="bg-indigo-500/25 px-2.5 py-0.5 rounded text-indigo-300 text-xs border border-indigo-500/30 font-bold">
+                  <span className="bg-indigo-50 px-2.5 py-0.5 rounded text-indigo-600 text-xs border border-indigo-100 font-bold">
                     AI synonym filter: {selectedSynonym}
                   </span>
                 )}
@@ -638,12 +638,12 @@ export default function ProductBrowse() {
             )}
           </div>
 
-          {/* 🛍&amp;#xFE0F; Dynamic Grid of Glassmorphic Product Cards */}
+          {/* 🛍️ Dynamic Grid of Glassmorphic Product Cards */}
           {filteredProducts.length === 0 ? (
-            <div className="w-full py-20 bg-slate-900/20 border border-dashed border-slate-800 rounded-3xl flex flex-col items-center justify-center gap-4 text-center">
-              <AlertTriangle className="h-10 w-10 text-purple-400/80" />
+            <div className="w-full py-20 bg-white border border-slate-200 rounded-3xl flex flex-col items-center justify-center gap-4 text-center shadow-sm">
+              <AlertTriangle className="h-10 w-10 text-purple-600/80" />
               <div>
-                <h3 className="font-bold text-lg text-white">No products match your criteria</h3>
+                <h3 className="font-bold text-lg text-slate-800">No products match your criteria</h3>
                 <p className="text-slate-500 text-sm mt-1">Try resetting the filters or modifying your search query.</p>
               </div>
             </div>
@@ -662,29 +662,29 @@ export default function ProductBrowse() {
                     exit={{ opacity: 0, scale: 0.9 }}
                     transition={{ duration: 0.3 }}
                     onClick={() => handleCardClick(product)}
-                    className="relative group bg-slate-900/30 border border-slate-850 hover:border-slate-750/70 rounded-3xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 flex flex-col shadow-lg shadow-black/40 hover:shadow-indigo-500/5 cursor-pointer"
+                    className="relative group bg-white border border-slate-200 hover:border-slate-300 rounded-3xl overflow-hidden backdrop-blur-sm transition-all duration-300 hover:-translate-y-1.5 flex flex-col shadow-lg shadow-slate-100/70 hover:shadow-indigo-500/5 cursor-pointer"
                   >
                     {/* Image panel with local hub tag */}
-                    <div className="relative h-48 w-full overflow-hidden bg-slate-950">
+                    <div className="relative h-48 w-full overflow-hidden bg-slate-100">
                       <img
                         src={product.images[0]}
                         alt={product.name}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent opacity-80" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/10 via-transparent to-transparent opacity-80" />
                       
                       {/* Location Badge */}
-                      <span className="absolute top-4 left-4 bg-slate-900/85 backdrop-blur-md border border-slate-700/50 text-[10px] font-bold text-slate-300 px-3 py-1 rounded-full flex items-center gap-1">
-                        <MapPin className="h-3 w-3 text-purple-400" /> {product.location}
+                      <span className="absolute top-4 left-4 bg-white/95 backdrop-blur-md border border-slate-200 text-[10px] font-bold text-slate-600 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                        <MapPin className="h-3 w-3 text-purple-600" /> {product.location}
                       </span>
 
                       {/* Wishlist Button */}
                       <button
                         onClick={(e) => toggleWishlist(e, product.id)}
-                        className={`absolute top-4 right-4 p-2 rounded-full border backdrop-blur-md transition-all cursor-pointer ${
+                        className={`absolute top-4 right-4 p-2 rounded-full border backdrop-blur-md transition-all cursor-pointer shadow-sm ${
                           wishlistedIds.includes(product.id)
-                            ? "bg-rose-500/20 border-rose-500/40 text-rose-400"
-                            : "bg-slate-900/85 border-slate-700/50 text-slate-400 hover:text-rose-400"
+                            ? "bg-rose-50 border-rose-200 text-rose-500"
+                            : "bg-white/95 border-slate-200 text-slate-400 hover:text-rose-500"
                         }`}
                       >
                         <Heart 
@@ -694,7 +694,7 @@ export default function ProductBrowse() {
                       </button>
 
                       {/* Category Badge */}
-                      <span className="absolute bottom-4 left-4 bg-purple-500/20 border border-purple-500/30 text-[9px] font-extrabold uppercase tracking-wider text-purple-300 px-2.5 py-0.5 rounded">
+                      <span className="absolute bottom-4 left-4 bg-purple-50 border border-purple-100 text-[9px] font-extrabold uppercase tracking-wider text-purple-600 px-2.5 py-0.5 rounded">
                         {product.category}
                       </span>
                     </div>
@@ -704,36 +704,36 @@ export default function ProductBrowse() {
                       <div className="flex flex-col gap-2">
                         {/* Title & Rating */}
                         <div className="flex items-start justify-between gap-2">
-                          <h3 className="font-bold text-white text-base group-hover:text-purple-300 transition-colors leading-tight">
+                          <h3 className="font-bold text-slate-800 text-base group-hover:text-purple-600 transition-colors leading-tight">
                             {product.name}
                           </h3>
-                          <div className="flex items-center gap-1 text-amber-400 shrink-0 text-sm font-bold bg-amber-400/5 border border-amber-400/10 px-2 py-0.5 rounded-lg">
-                            <Star className="h-3.5 w-3.5 fill-amber-400" /> {product.rating}
+                          <div className="flex items-center gap-1 text-amber-600 shrink-0 text-sm font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg">
+                            <Star className="h-3.5 w-3.5 fill-amber-500" /> {product.rating}
                           </div>
                         </div>
 
                         {/* Description */}
-                        <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">
+                        <p className="text-slate-500 text-xs line-clamp-2 leading-relaxed">
                           {product.description}
                         </p>
 
                         {/* Vendor Name */}
-                        <div className="text-[11px] text-slate-500 font-medium">
-                          Store: <strong className="text-slate-400 font-semibold">{product.vendorName}</strong>
+                        <div className="text-[11px] text-slate-400 font-medium">
+                          Store: <strong className="text-slate-600 font-semibold">{product.vendorName}</strong>
                         </div>
                       </div>
 
                       {/* Footer: Price & Add button */}
-                      <div className="flex items-center justify-between pt-4 border-t border-slate-800/80 mt-2">
+                      <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-2">
                         <div className="flex flex-col">
-                          <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Price</span>
-                          <span className="text-xl font-extrabold text-white">${product.price}</span>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Price</span>
+                          <span className="text-xl font-extrabold text-slate-900">${product.price}</span>
                         </div>
 
                         {/* Direct purchase with stock checks */}
                         <div className="flex items-center gap-2">
                           {product.stock <= 3 && (
-                            <div className="flex items-center gap-1 text-[10px] text-orange-400 font-extrabold bg-orange-400/5 border border-orange-400/10 px-2 py-1 rounded">
+                            <div className="flex items-center gap-1 text-[10px] text-orange-600 font-extrabold bg-orange-50 border border-orange-200 px-2 py-1 rounded">
                               <AlertTriangle className="h-3.5 w-3.5" /> Low Stock ({product.stock})
                             </div>
                           )}
@@ -742,7 +742,7 @@ export default function ProductBrowse() {
                             onClick={(e) => handleAddToCart(e, product.id)}
                             className={`px-4 py-2.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition-all active:scale-95 cursor-pointer ${
                               addedProductIds.includes(product.id)
-                                ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-300"
+                                ? "bg-emerald-50 border border-emerald-200 text-emerald-600"
                                 : "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/10"
                             }`}
                           >
@@ -767,47 +767,59 @@ export default function ProductBrowse() {
         </main>
       </section>
 
+      {/* 🔮 Footer Section */}
+      <footer className="mt-auto w-full bg-white border-t border-slate-200/80 px-6 py-12 flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-2 text-slate-400 text-xs font-semibold">
+          <span>© {new Date().getFullYear()} TeamXdesign. Built for DevFusion 2.0.</span>
+        </div>
+        <div className="flex items-center gap-4 text-xs font-medium text-slate-400">
+          <a href="#" className="hover:text-slate-800 transition-colors">Privacy Policy</a>
+          <a href="#" className="hover:text-slate-800 transition-colors">Terms of Use</a>
+          <a href="#" className="hover:text-slate-800 transition-colors">Contact Support</a>
+        </div>
+      </footer>
+
       {/* 🔮 MODAL PANEL: AI-GUIDED PRODUCT DETAIL & BUNDLED RECOMMENDATIONS */}
       <AnimatePresence>
         {selectedProduct && (
-          <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-6 overflow-y-auto">
+          <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 overflow-y-auto">
             <motion.div 
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="max-w-3xl w-full bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl relative flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-y-auto"
+              className="max-w-3xl w-full bg-white border border-slate-200 p-6 sm:p-8 rounded-3xl shadow-2xl relative flex flex-col md:flex-row gap-8 max-h-[90vh] overflow-y-auto"
             >
               {/* Close Trigger */}
               <button 
                 onClick={() => setSelectedProduct(null)}
-                className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-500 hover:text-slate-200 hover:bg-slate-800 border border-transparent hover:border-slate-700 transition-all cursor-pointer z-10"
+                className="absolute top-4 right-4 p-1.5 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 border border-transparent hover:border-slate-200 transition-all cursor-pointer z-10"
               >
                 <X className="h-5.5 w-5.5" />
               </button>
 
               {/* Left Column: Image, Price, Location */}
               <div className="w-full md:w-2/5 flex flex-col gap-4">
-                <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-850">
+                <div className="relative aspect-square w-full rounded-2xl overflow-hidden bg-slate-100 border border-slate-200">
                   <img 
                     src={selectedProduct.images[0]} 
                     alt={selectedProduct.name} 
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-transparent to-transparent" />
-                  <span className="absolute bottom-4 left-4 bg-purple-500/20 border border-purple-500/30 text-[9px] font-extrabold uppercase tracking-wider text-purple-300 px-2.5 py-0.5 rounded">
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/5 via-transparent to-transparent" />
+                  <span className="absolute bottom-4 left-4 bg-purple-50 border border-purple-100 text-[9px] font-extrabold uppercase tracking-wider text-purple-600 px-2.5 py-0.5 rounded">
                     {selectedProduct.category}
                   </span>
                 </div>
 
-                <div className="flex flex-col bg-slate-950/40 p-4 rounded-2xl border border-slate-850 text-xs gap-2">
+                <div className="flex flex-col bg-slate-50 p-4 rounded-2xl border border-slate-200 text-xs gap-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Seller Shop</span>
-                    <strong className="text-slate-200">{selectedProduct.vendorName}</strong>
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Seller Shop</span>
+                    <strong className="text-slate-700">{selectedProduct.vendorName}</strong>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-500 font-bold uppercase tracking-wider text-[10px]">Local hub location</span>
-                    <span className="text-indigo-400 font-semibold flex items-center gap-1">
-                      <MapPin className="h-3.5 w-3.5 text-purple-400" /> {selectedProduct.location}
+                    <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Local hub location</span>
+                    <span className="text-indigo-600 font-semibold flex items-center gap-1">
+                      <MapPin className="h-3.5 w-3.5 text-purple-600" /> {selectedProduct.location}
                     </span>
                   </div>
                 </div>
@@ -818,48 +830,48 @@ export default function ProductBrowse() {
                 
                 {/* Header segment */}
                 <div className="flex flex-col gap-2">
-                  <h3 className="font-black text-2xl text-white leading-tight mt-2 sm:mt-0">
+                  <h3 className="font-black text-2xl text-slate-900 leading-tight mt-2 sm:mt-0">
                     {selectedProduct.name}
                   </h3>
                   <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-1 text-amber-400 text-xs font-bold bg-amber-400/5 border border-amber-400/10 px-2 py-0.5 rounded-lg w-fit">
-                      <Star className="h-3.5 w-3.5 fill-amber-400" /> {selectedProduct.rating}
+                    <div className="flex items-center gap-1 text-amber-600 text-xs font-bold bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-lg w-fit">
+                      <Star className="h-3.5 w-3.5 fill-amber-500" /> {selectedProduct.rating}
                     </div>
-                    <span className="text-slate-500">|</span>
-                    <span className="font-semibold text-slate-400">
+                    <span className="text-slate-350">|</span>
+                    <span className="font-semibold text-slate-500">
                       {selectedProduct.stock > 0 ? `${selectedProduct.stock} available in local store` : "Out of stock"}
                     </span>
                   </div>
-                  <p className="text-slate-400 leading-relaxed text-xs mt-1">
+                  <p className="text-slate-600 leading-relaxed text-xs mt-1">
                     {selectedProduct.description}
                   </p>
                 </div>
 
                 {/* AI Recommendations Segment */}
-                <div className="p-5 bg-gradient-to-tr from-purple-950/15 via-slate-950/50 to-indigo-950/15 border border-purple-500/20 rounded-2xl flex flex-col gap-4 shadow-inner relative overflow-hidden">
+                <div className="p-5 bg-gradient-to-tr from-purple-50/50 via-slate-50/50 to-indigo-50/50 border border-purple-100 rounded-2xl flex flex-col gap-4 shadow-inner relative overflow-hidden">
                   <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/5 rounded-full blur-2xl pointer-events-none" />
                   
-                  <div className="flex items-center gap-2 text-xs font-bold text-purple-300">
-                    <Sparkles className="h-4.5 w-4.5 text-purple-400 animate-pulse" />
+                  <div className="flex items-center gap-2 text-xs font-bold text-purple-600">
+                    <Sparkles className="h-4.5 w-4.5 text-purple-600 animate-pulse" />
                     <span>🔮 Premium AI Companion Recommendation</span>
                   </div>
 
                   {isRecLoading ? (
                     <div className="py-6 flex flex-col items-center justify-center gap-2">
-                      <Loader2 className="h-7 w-7 text-purple-400 animate-spin" />
-                      <span className="text-[10px] text-slate-500 font-extrabold uppercase tracking-widest">Querying Google Gemini...</span>
+                      <Loader2 className="h-7 w-7 text-purple-500 animate-spin" />
+                      <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest">Querying Google Gemini...</span>
                     </div>
                   ) : aiRec ? (
                     <div className="flex flex-col gap-3">
                       {/* Reason & Luxury Header */}
                       <div className="flex flex-col gap-1">
-                        <strong className="text-sm font-extrabold text-white">
+                        <strong className="text-sm font-extrabold text-slate-800">
                           Curation: {aiRec.complementaryTitle}
                         </strong>
-                        <p className="text-slate-400 leading-relaxed text-xs mt-0.5">
+                        <p className="text-slate-600 leading-relaxed text-xs mt-0.5">
                           {aiRec.recommendationReason}
                         </p>
-                        <p className="text-[11px] text-indigo-300/80 italic mt-1 leading-relaxed border-l-2 border-indigo-500/30 pl-2">
+                        <p className="text-[11px] text-indigo-600/80 italic mt-1 leading-relaxed border-l-2 border-indigo-400/30 pl-2">
                           "{aiRec.luxuryMessage}"
                         </p>
                       </div>
@@ -871,24 +883,24 @@ export default function ProductBrowse() {
                         return (
                           <div 
                             key={recProduct.id} 
-                            className="bg-slate-950/60 border border-slate-850 p-3 rounded-xl flex items-center justify-between gap-3 mt-1"
+                            className="bg-white border border-slate-200 p-3 rounded-xl flex items-center justify-between gap-3 mt-1 shadow-sm"
                           >
                             <div className="flex items-center gap-3">
                               <img 
                                 src={recProduct.images[0]} 
                                 alt={recProduct.name} 
-                                className="h-11 w-11 object-cover rounded-lg border border-slate-800 shrink-0"
+                                className="h-11 w-11 object-cover rounded-lg border border-slate-200 shrink-0"
                               />
                               <div className="flex flex-col gap-0.5">
-                                <span className="font-bold text-white leading-tight">{recProduct.name}</span>
-                                <span className="text-[10px] text-slate-500">Category: {recProduct.category}</span>
+                                <span className="font-bold text-slate-800 leading-tight">{recProduct.name}</span>
+                                <span className="text-[10px] text-slate-400">Category: {recProduct.category}</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-3 shrink-0">
-                              <strong className="text-white text-sm">${recProduct.price}</strong>
+                              <strong className="text-slate-800 text-sm">${recProduct.price}</strong>
                               <button
                                 onClick={() => handleAddToCart(null, recProduct.id)}
-                                className="bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white p-1.5 rounded-lg transition-all cursor-pointer"
+                                className="bg-slate-50 border border-slate-200 hover:border-slate-300 text-slate-500 hover:text-slate-800 p-1.5 rounded-lg transition-all cursor-pointer"
                               >
                                 <ShoppingBag className="h-4 w-4" />
                               </button>
@@ -901,22 +913,22 @@ export default function ProductBrowse() {
                       {aiRec.recommendedProductIds.length > 0 && (
                         <button
                           onClick={() => handleBuyBundle(selectedProduct.id, aiRec.recommendedProductIds[0])}
-                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-xl shadow-lg shadow-indigo-600/10 hover:shadow-indigo-600/30 transition-all flex items-center justify-center gap-1.5 mt-1 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+                          className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-3 rounded-xl shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/35 transition-all flex items-center justify-center gap-1.5 mt-1 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
                         >
-                          <Sparkles className="h-4 w-4 text-purple-300" /> Buy Bundled Pair (${(selectedProduct.price + (MOCK_PRODUCTS.find(p => p.id === aiRec.recommendedProductIds[0])?.price || 0)).toFixed(2)})
+                          <Sparkles className="h-4 w-4 text-purple-200" /> Buy Bundled Pair (${(selectedProduct.price + (MOCK_PRODUCTS.find(p => p.id === aiRec.recommendedProductIds[0])?.price || 0)).toFixed(2)})
                         </button>
                       )}
                     </div>
                   ) : (
-                    <div className="text-slate-500 text-[10px] text-center py-4 uppercase font-bold">Failed to load AI curate.</div>
+                    <div className="text-slate-400 text-[10px] text-center py-4 uppercase font-bold">Failed to load AI curate.</div>
                   )}
                 </div>
 
                 {/* Footer segment: Price & Actions */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-850 mt-2">
+                <div className="flex items-center justify-between pt-4 border-t border-slate-200 mt-2">
                   <div className="flex flex-col">
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Single Item Price</span>
-                    <span className="text-2xl font-black text-white">${selectedProduct.price}</span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Single Item Price</span>
+                    <span className="text-2xl font-black text-slate-900">${selectedProduct.price}</span>
                   </div>
 
                   <div className="flex items-center gap-2">
@@ -924,8 +936,8 @@ export default function ProductBrowse() {
                       onClick={() => handleAddToCart(null, selectedProduct.id)}
                       className={`px-5 py-3 rounded-xl font-extrabold text-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
                         addedProductIds.includes(selectedProduct.id)
-                          ? "bg-emerald-500/20 border border-emerald-500/50 text-emerald-300"
-                          : "bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-100 shadow-md"
+                          ? "bg-emerald-50 border border-emerald-200 text-emerald-600 font-bold"
+                          : "bg-slate-950 hover:bg-slate-800 text-white shadow-md"
                       }`}
                     >
                       {addedProductIds.includes(selectedProduct.id) ? (
