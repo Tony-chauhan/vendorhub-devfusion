@@ -54,6 +54,40 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
       return;
     }
 
+    // Save custom checkout order in localStorage so it appears in My Orders
+    const newOrder = {
+      id: `order_${Math.floor(100000 + Math.random() * 900000)}`,
+      total: parseFloat(finalPrice.toFixed(2)),
+      status: "PLACED",
+      createdAt: new Date().toISOString(),
+      address: selectedAddress,
+      orderItems: items.map((item) => ({
+        price: item.price,
+        quantity: item.quantity,
+        product: {
+          id: item.id,
+          name: item.name,
+          images: item.images,
+          category: item.category
+        }
+      })),
+      user: {
+        name: "Dharmender Chauhan"
+      }
+    };
+
+    if (typeof window !== 'undefined') {
+      const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
+      let localOrders: any[] = [];
+      if (savedOrdersStr) {
+        try {
+          localOrders = JSON.parse(savedOrdersStr);
+        } catch (err) {}
+      }
+      localOrders.unshift(newOrder);
+      localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
+    }
+
     const placePromise = new Promise((resolve) => {
       setTimeout(() => {
         dispatch(clearCart());

@@ -110,7 +110,51 @@ export default function CheckoutPage() {
       });
 
       if (result.success) {
-        setGeneratedOrderNum(result.orderNumber || "VNH-104820");
+        const orderNum = result.orderNumber || "VNH-104820";
+        setGeneratedOrderNum(orderNum);
+
+        // Save custom checkout order in localStorage so it appears in My Orders
+        const newOrder = {
+          id: result.orderId || `order_${Math.floor(100000 + Math.random() * 900000)}`,
+          total: totalAmount,
+          status: "PLACED",
+          createdAt: new Date().toISOString(),
+          address: {
+            name: fullName,
+            street: street,
+            city: city,
+            zip: zipCode,
+            state: "KA",
+            country: "India",
+            phone: phone
+          },
+          orderItems: MOCK_CART_ITEMS.map((item) => ({
+            price: item.price,
+            quantity: item.quantity,
+            product: {
+              id: item.id,
+              name: item.name,
+              images: [item.image],
+              category: "Electronics"
+            }
+          })),
+          user: {
+            name: "Dharmender Chauhan"
+          }
+        };
+
+        if (typeof window !== 'undefined') {
+          const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
+          let localOrders: any[] = [];
+          if (savedOrdersStr) {
+            try {
+              localOrders = JSON.parse(savedOrdersStr);
+            } catch (err) {}
+          }
+          localOrders.unshift(newOrder);
+          localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
+        }
+
         setIsSuccess(true);
         triggerConfetti();
       } else {

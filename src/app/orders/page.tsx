@@ -12,7 +12,18 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
 
   useEffect(() => {
-    setOrders(orderDummyData);
+    let localOrders: any[] = [];
+    if (typeof window !== 'undefined') {
+      const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
+      if (savedOrdersStr) {
+        try {
+          localOrders = JSON.parse(savedOrdersStr);
+        } catch (e) {
+          console.error("Failed to parse saved orders from localStorage", e);
+        }
+      }
+    }
+    setOrders([...localOrders, ...orderDummyData]);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
