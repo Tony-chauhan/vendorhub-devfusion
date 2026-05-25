@@ -78,7 +78,7 @@ export default function StoreDashboard() {
 
             return (
               <div
-                key={review.id || idx}
+                key={`${review.id || 'review'}-${idx}`}
                 className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
                 <div className="flex items-start gap-4">

@@ -90,7 +90,7 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
             <div className="flex flex-col space-y-4">
               {reviews.map((item: any, idx: number) => (
                 <div
-                  key={item.id || idx}
+                  key={`${item.id || 'rat'}-${idx}`}
                   className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start gap-4 sm:gap-6 animate-in fade-in duration-300"
                 >
                   <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0">
