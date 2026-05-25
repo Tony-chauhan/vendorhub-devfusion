@@ -30,6 +30,7 @@ import {
   ResponsiveContainer 
 } from "recharts";
 import { addProduct, deleteProduct } from "@/app/actions/products";
+import { getAIPriceSuggestions } from "@/app/actions/ai";
 
 // Mock sales data for the chart representation
 const MOCK_SALES_DATA = [
@@ -101,6 +102,39 @@ export default function VendorDashboard() {
   const [newImage, setNewImage] = useState("https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80");
   const [newDescription, setNewDescription] = useState("");
   const [submitError, setSubmitError] = useState("");
+
+  // AI Pricing & Copy Optimization states
+  const [isAiPriceLoading, setIsAiPriceLoading] = useState(false);
+  const [aiPriceInsight, setAiPriceInsight] = useState<{
+    seoTags: string[];
+    localMarketInsights: string;
+  } | null>(null);
+
+  // Trigger Gemini AI Price & Copy Consult
+  const handleAIPriceConsult = () => {
+    if (!newName) {
+      setSubmitError("Please enter a Product Name first so the Gemini AI can assess it.");
+      return;
+    }
+    setSubmitError("");
+    setIsAiPriceLoading(true);
+    setAiPriceInsight(null);
+
+    startTransition(async () => {
+      const res = await getAIPriceSuggestions(newName, newCategory, newDescription);
+      if (res.success && res.data) {
+        setNewPrice(res.data.recommendedPrice.toString());
+        setNewDescription(res.data.marketingCopy);
+        setAiPriceInsight({
+          seoTags: res.data.seoTags,
+          localMarketInsights: res.data.localMarketInsights,
+        });
+      } else {
+        setSubmitError("Gemini Pricing Advisor sandbox query failed.");
+      }
+      setIsAiPriceLoading(false);
+    });
+  };
 
   // Stats Calculations
   const totalRevenue = orders.reduce((sum, o) => sum + o.totalAmount, 0);
@@ -526,6 +560,44 @@ export default function VendorDashboard() {
                   onChange={(e) => setNewName(e.target.value)}
                   className="bg-slate-950 border border-slate-850 hover:border-slate-800 focus:border-indigo-500/70 rounded-xl py-3 px-4 text-slate-100 placeholder-slate-600 focus:outline-none transition-all"
                 />
+              </div>
+
+              {/* Gemini AI Optimization Consultant */}
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={handleAIPriceConsult}
+                  disabled={isAiPriceLoading || !newName}
+                  className="w-full bg-purple-600/10 border border-purple-500/30 hover:bg-purple-600/20 text-purple-300 font-bold py-3 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:cursor-not-allowed disabled:bg-slate-900/50 disabled:border-slate-850 disabled:text-slate-600 hover:scale-[1.01] active:scale-[0.99]"
+                >
+                  {isAiPriceLoading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-purple-400" /> Consulting Gemini Advisor...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-4 w-4 text-purple-400" /> Optimize Price & Copy with Gemini AI
+                    </>
+                  )}
+                </button>
+
+                {aiPriceInsight && (
+                  <div className="p-4 bg-purple-500/5 border border-purple-500/20 rounded-xl flex flex-col gap-2 shadow-inner">
+                    <span className="text-[10px] text-purple-300 font-extrabold uppercase tracking-wider flex items-center gap-1.5">
+                      <Sparkles className="h-3.5 w-3.5 text-purple-400" /> Gemini Local Insights
+                    </span>
+                    <p className="text-[11px] text-slate-400 font-medium italic">
+                      "{aiPriceInsight.localMarketInsights}"
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {aiPriceInsight.seoTags.map((tag) => (
+                        <span key={tag} className="text-[9px] bg-slate-950 px-2 py-0.5 rounded text-indigo-400 border border-slate-850 font-extrabold uppercase tracking-wide">
+                          #{tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* Price & Stock */}
