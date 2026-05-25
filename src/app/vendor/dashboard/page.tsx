@@ -99,9 +99,25 @@ export default function VendorDashboard() {
   const [newPrice, setNewPrice] = useState("");
   const [newStock, setNewStock] = useState("");
   const [newCategory, setNewCategory] = useState("Electronics");
-  const [newImage, setNewImage] = useState("https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80");
+  const [newImage, setNewImage] = useState("/pic/xingye-jiang-aGZYFSKv8cI-unsplash.jpg");
   const [newDescription, setNewDescription] = useState("");
   const [submitError, setSubmitError] = useState("");
+
+  // Dynamic Image Auto-Selection based on Product Name keywords
+  React.useEffect(() => {
+    const nameLower = newName.toLowerCase();
+    if (nameLower.includes("phone") || nameLower.includes("oneplus") || nameLower.includes("mobile") || nameLower.includes("samsung") || nameLower.includes("iphone") || nameLower.includes("nord")) {
+      setNewImage("/pic/xingye-jiang-aGZYFSKv8cI-unsplash.jpg");
+    } else if (nameLower.includes("keyboard") || nameLower.includes("keycap")) {
+      setNewImage("https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80");
+    } else if (nameLower.includes("headphone") || nameLower.includes("earphone") || nameLower.includes("audio") || nameLower.includes("anc")) {
+      setNewImage("https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80");
+    } else if (nameLower.includes("furniture") || nameLower.includes("chair") || nameLower.includes("table") || nameLower.includes("desk")) {
+      setNewImage("https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=500&auto=format&fit=crop&q=80");
+    } else if (nameLower.includes("organic") || nameLower.includes("farm") || nameLower.includes("grocery") || nameLower.includes("fruit") || nameLower.includes("honey") || nameLower.includes("saffron") || nameLower.includes("spice")) {
+      setNewImage("https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500&auto=format&fit=crop&q=80");
+    }
+  }, [newName]);
 
   // AI Pricing & Copy Optimization states
   const [isAiPriceLoading, setIsAiPriceLoading] = useState(false);
@@ -645,7 +661,9 @@ export default function VendorDashboard() {
                 <label className="font-bold text-slate-400 uppercase tracking-wider">Choose Image Template Preset</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { name: "Electronics", url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80" },
+                    { name: "Smartphone", url: "/pic/xingye-jiang-aGZYFSKv8cI-unsplash.jpg" },
+                    { name: "Headphones", url: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&auto=format&fit=crop&q=80" },
+                    { name: "Keyboard", url: "https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&auto=format&fit=crop&q=80" },
                     { name: "Organic Farm", url: "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?w=500&auto=format&fit=crop&q=80" },
                     { name: "Furniture Study", url: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?w=500&auto=format&fit=crop&q=80" }
                   ].map((img) => (
