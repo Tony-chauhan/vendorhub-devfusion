@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Outfit } from "next/font/google";
 import { CustomClerkProvider } from "@/lib/clerk-client";
+import StoreProvider from "@/app/StoreProvider";
+import { Toaster } from "react-hot-toast";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const outfit = Outfit({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-outfit",
 });
 
 export const metadata: Metadata = {
@@ -27,10 +25,13 @@ export default function RootLayout({
     <CustomClerkProvider>
       <html
         lang="en"
-        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+        className={`${outfit.variable} h-full antialiased`}
       >
-        <body className="min-h-full flex flex-col bg-slate-950 text-slate-100 antialiased">
-          {children}
+        <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 font-sans antialiased">
+          <StoreProvider>
+            <Toaster position="top-center" reverseOrder={false} />
+            {children}
+          </StoreProvider>
         </body>
       </html>
     </CustomClerkProvider>
