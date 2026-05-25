@@ -27,7 +27,7 @@ import {
   Tooltip, 
   ResponsiveContainer 
 } from "recharts";
-import { useUser, SignOutButton } from "@clerk/nextjs";
+import { useCustomUser as useUser, CustomSignOutButton as SignOutButton } from "@/lib/clerk-client";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   getAdminAnalytics, 

@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
+import { customCurrentUser as currentUser } from "@/lib/clerk-server";
 import { inngest } from "@/lib/inngest/client";
 
 interface OrderItemInput {

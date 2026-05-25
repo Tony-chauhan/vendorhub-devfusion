@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { currentUser } from "@clerk/nextjs/server";
+import { customCurrentUser as currentUser } from "@/lib/clerk-server";
 
 // 1. Helper to assert that the caller is the platform administrator
 export async function checkAdmin() {

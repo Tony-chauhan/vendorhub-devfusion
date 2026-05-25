@@ -1,4 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { customClerkMiddleware } from "@/lib/clerk-server";
+
+const clerkSecretKey = process.env.CLERK_SECRET_KEY;
+const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+const isMock = !clerkSecretKey || clerkSecretKey.includes("mock") || !clerkPubKey || clerkPubKey.includes("mock") || clerkPubKey.startsWith("pk_test_dGVhbXhkZXNpZ24");
 
 // Define matchers for routes that require authentication
 const isProtectedRoute = createRouteMatcher([
@@ -8,7 +13,8 @@ const isProtectedRoute = createRouteMatcher([
   "/checkout(.*)",
 ]);
 
-export default clerkMiddleware(async (auth, req) => {
+export default customClerkMiddleware(async (auth: any, req: any) => {
+  if (isMock) return;
   if (isProtectedRoute(req)) {
     await auth.protect();
   }
