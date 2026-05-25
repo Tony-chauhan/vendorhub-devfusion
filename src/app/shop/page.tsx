@@ -163,7 +163,7 @@ function ShopContent() {
     return 0; // Default sorting (catalog ordering)
   });
 
-  const categoriesList = ['Headphones', 'Speakers', 'Watch', 'Earbuds', 'Mouse', 'Decoration', 'Camera', 'Laptop', 'Keyboard', 'Tablet'];
+  const categoriesList = ['Headphones', 'Speakers', 'Watch', 'Earbuds', 'Mouse', 'Decoration', 'Camera', 'Laptop', 'Keyboard', 'Tablet', 'Gaming'];
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900">
