@@ -525,7 +525,7 @@ export default function VendorDashboard() {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="max-w-md w-full bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl relative flex flex-col gap-5"
+            className="max-w-md w-full bg-slate-900 border border-slate-800 p-6 sm:p-8 rounded-3xl shadow-2xl relative flex flex-col gap-5 max-h-[90vh] overflow-y-auto scrollbar-thin"
           >
             {/* Close Button */}
             <button 

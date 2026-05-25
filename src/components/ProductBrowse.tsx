@@ -378,14 +378,14 @@ export default function ProductBrowse() {
             )}
           </button>
           
-          <button className="relative p-2.5 rounded-full hover:bg-slate-800/70 border border-transparent hover:border-slate-700/50 transition-all text-slate-400 hover:text-slate-100">
+          <Link href="/checkout" className="relative p-2.5 rounded-full hover:bg-slate-800/70 border border-transparent hover:border-slate-700/50 transition-all text-slate-400 hover:text-slate-100">
             <ShoppingBag className="h-5.5 w-5.5" />
             {cartCount > 0 && (
               <span className="absolute -top-1 -right-1 bg-indigo-500 text-white font-bold text-[10px] w-5 h-5 rounded-full flex items-center justify-center shadow-lg shadow-indigo-500/30">
                 {cartCount}
               </span>
             )}
-          </button>
+          </Link>
 
           <Link href="/vendor/dashboard" className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-semibold text-sm px-5 py-2.5 rounded-full shadow-lg shadow-indigo-600/20 hover:shadow-indigo-600/40 hover:scale-105 active:scale-95 transition-all text-center">
             Vendor Portal
