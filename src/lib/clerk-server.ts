@@ -1,4 +1,5 @@
 import * as ClerkServer from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
 const clerkSecretKey = process.env.CLERK_SECRET_KEY;
 const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -48,8 +49,8 @@ export function customClerkMiddleware(callback?: any) {
     // In mock mode, we bypass Clerk's route-guard middleware completely
     // and let all dashboard paths load instantly for judges
     const dummyMiddleware = (req: any) => {
-      // Just continue standard routing
-      return;
+      // Just continue standard routing by returning NextResponse.next()
+      return NextResponse.next();
     };
     return dummyMiddleware;
   }
