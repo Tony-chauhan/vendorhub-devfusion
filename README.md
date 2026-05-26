@@ -1,32 +1,44 @@
 # 🔮 VendorHub — Hyperlocal Multi-Vendor E-Commerce Platform
 
-Welcome to **VendorHub**, a premium, AI-powered hyperlocal multi-vendor e-commerce marketplace built for the **DevFusion 2.0 Hackathon**. Designed with high-performance serverless architecture, event-driven asynchronous engines, secure asset CDNs, and state-of-the-art Generative AI integrations, VendorHub connects local sellers with neighborhood buyers seamlessly.
+[![Vercel Deployment](https://img.shields.io/badge/Vercel-Live-green?style=for-the-badge&logo=vercel&logoColor=white&color=000000)](https://vendorhub-devfusion.vercel.app)
+[![GitHub Repository](https://img.shields.io/badge/GitHub-Repository-blue?style=for-the-badge&logo=github&logoColor=white&color=181717)](https://github.com/Tony-chauhan/vendorhub-devfusion)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.6-black?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
 
-Developed collaboratively by **TeamXdesign** under the leadership of **Dharmender Chauhan (Team Leader)** and **Rishita Sorout (Team Member)**, this platform showcases full-stack Next.js capabilities.
+Welcome to **VendorHub**, a premium, AI-powered hyperlocal multi-vendor e-commerce marketplace built for the **DevFusion 2.0 Hackathon**. Engineered with serverless relational architecture, asynchronous event-driven worker queues, optimized media delivery CDNs, and state-of-the-art Generative AI integrations, VendorHub connects local storefronts with neighborhood buyers seamlessly.
+
+Developed with 💜 by **TeamXdesign**:
+*   **Dharmender Chauhan** — Team Leader & Lead Full-Stack Architect
+*   **Rishita Sorout** — Team Member & UI/UX Design Specialist
+
+---
+
+## 🌐 Live Production Cloud Link
+🔗 **Official Live Platform:** **[https://vendorhub-devfusion.vercel.app](https://vendorhub-devfusion.vercel.app)**  
+*Deployed natively on the Next.js serverless environment with secure CDN asset delivery.*
 
 ---
 
 ## 🚀 Key Feature Highlights & Capabilities
 
 ### 1. 🔮 Dual-Engine Google Gemini AI Integration
-*   **AI-Enhanced Fuzzy Search & Synonym Extender:** Expanding buyer queries in real time using natural language reasoning (e.g., searching for "kesar" automatically returns Srinagar Saffron, spices, and organic teas).
-*   **AI product Detail & recommendations Engine:** Asynchronously analyzes the buyer's active product selection to suggest premium companion curations, giving buyers a **1-click bundle purchase option** that triggers visual checkout bursts.
+*   **AI-Enhanced Fuzzy Search & Synonym Extender:** Expanding buyer queries in real time using natural language reasoning (e.g., searching for "kesar" automatically returns Srinagar Saffron, organic teas, and mountain spices).
+*   **AI Product Curation & 1-Click Confetti Bundling:** Asynchronously analyzes active product selections to suggest premium companion curations, giving buyers a **1-click bundle purchase option** that triggers visual checkout fireworks bursts!
 *   **AI Pricing & Marketing Copy Advisor:** Empowers local sellers. In the Vendor Dashboard, sellers can input a product name and category, and the Gemini-powered advisor instantly recommends competitive prices, optimizes descriptive SEO-focused marketing copy, and delivers local market demand insights.
 *   **Failsafe Dual-Architecture Fallback:** In the absence of live Gemini credentials, a highly advanced local NLP and semantic dictionary mock-engine activates instantly, guaranteeing 100% functionality and fast execution for judges.
 
-### 2. 🔐 Multi-Tenant Identity & clerk Auth
+### 2. 🔐 Multi-Tenant Identity & Clerk Auth
 *   Seamless role separation (**Buyer, Vendor, Admin**) mapped securely via custom route guards (`/admin`, `/vendor`, `/checkout`, `/cart`).
 *   Auto-promotes the team leader's email to `ADMIN` upon database registration to ease evaluation, granting administrative desks full oversight.
 
-### 3. ⚡ Asynchronous background Processing (Inngest)
-*   **Clerk Sync webhook Broker:** Synchronizes user registrations, profile updates, and deletions from Clerk directly into Neon PostgreSQL asynchronously.
-*   **Low-Stock Audit scan:** Monitors vendor inventory levels in real-time when purchases are completed, warning vendors inside their dashboards of pending stock depletions.
+### 3. ⚡ Asynchronous Background Processing (Inngest)
+*   **Clerk Sync Webhook Broker:** Synchronizes user registrations, profile updates, and deletions from Clerk directly into Neon PostgreSQL asynchronously.
+*   **Low-Stock Audit Scan:** Monitors vendor inventory levels in real-time when purchases are completed, warning vendors inside their dashboards of pending stock depletions.
 
 ### 4. 📂 Fast Media Delivery (ImageKit.io CDN)
 *   Uses client-side secure signature tokens to upload multiple high-resolution product photos directly to ImageKit servers, ensuring immediate optimization and rapid global CDN distribution.
 
-### 5. 🎨 premium Futuristic Slate Glassmorphic UI/UX
-*   Stunning dark-mode accents with elegant violet and indigo glows, smooth hover scaling, micro-animations, Recharts analytics, step-by-step parcel tracking steppers, and interactive confettis upon checkouts.
+### 5. 🎨 Premium Futuristic Slate Glassmorphic UI/UX
+*   Stunning light-mode accents with elegant violet and indigo glows, smooth hover scaling, micro-animations, Recharts analytics, step-by-step parcel tracking steppers, and interactive confetti upon checkouts.
 
 ---
 
@@ -97,7 +109,7 @@ vendor-hub/
 │   │   ├── prisma.ts         # Serverless database Pg connection pool
 │   │   ├── imagekit.ts       # Secure ImageKit file upload configs
 │   │   └── inngest/          # Background worker client and triggers
-│   └── proxy.ts              # Next.js 16 authentication route guards
+│   └── proxy.ts              # Next.js 16 authentication route guards (renamed from middleware.ts)
 ```
 
 ---
@@ -153,6 +165,5 @@ npm run dev
 Open **[http://localhost:3000](http://localhost:3000)** in your browser to interact with the platform!
 
 ---
-
 
 *Developed with 💜 by TeamXdesign for DevFusion 2.0 Hackathon.*
