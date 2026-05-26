@@ -1,5 +1,5 @@
 import gs_logo from "./gs_logo.jpg"
-import happy_store from "./happy_store.webp"
+import s_mart_logo from "./s_mart_logo.png"
 import upload_area from "./upload_area.svg"
 import hero_model_img from "./hero_model_img.jpg"
 import hero_product_img1 from "./hero_product_img1.png"
@@ -47,14 +47,14 @@ export const dummyRatingsData = [
 export const dummyStoreData = {
     id: "store_1",
     userId: "user_1",
-    name: "Happy Shop",
-    description: "At Happy Shop, we believe shopping should be simple, smart, and satisfying. Whether you're hunting for the latest fashion trends, top-notch electronics, home essentials, or unique lifestyle products — we've got it all under one digital roof.",
-    username: "happyshop",
-    address: "3rd Floor, Happy Shop , New Building, 123 street , c sector , NY, US",
+    name: "S-mart",
+    description: "S-mart is your premier, modern electronic gadgets destination. We curate the finest high-performance laptops, smart accessories, premium audio gear, and cutting-edge tech gadgets to power your lifestyle.",
+    username: "smart",
+    address: "3rd Floor, S-mart , New Building, 123 street , c sector , NY, US",
     status: "approved",
     isActive: true,
-    logo: happy_store,
-    email: "happyshop@example.com",
+    logo: s_mart_logo,
+    email: "smart@example.com",
     contact: "+0 1234567890",
     createdAt: "2025-09-04T09:04:16.189Z",
     updatedAt: "2025-09-04T09:04:44.273Z",
@@ -754,14 +754,14 @@ export const storesDummyData = [
     {
         id: "cmemkqnzm000htat8u7n8cpte",
         userId: "user_31dQbH27HVtovbs13X2cmqefddM",
-        name: "Happy Shop",
-        description: "At Happy Shop, we believe shopping should be simple, smart, and satisfying. Whether you're hunting for the latest fashion trends, top-notch electronics, home essentials, or unique lifestyle products — we've got it all under one digital roof.",
-        username: "happyshop",
-        address: "3rd Floor, Happy Shop , New Building, 123 street , c sector , NY, US",
+        name: "S-mart",
+        description: "S-mart is your premier, modern electronic gadgets destination. We curate the finest high-performance laptops, smart accessories, premium audio gear, and cutting-edge tech gadgets to power your lifestyle.",
+        username: "smart",
+        address: "3rd Floor, S-mart , New Building, 123 street , c sector , NY, US",
         status: "approved",
         isActive: true,
-        logo: happy_store,
-        email: "happyshop@example.com",
+        logo: s_mart_logo,
+        email: "smart@example.com",
         contact: "+0 123456789",
         createdAt: "2026-05-25T08:34:15.155Z",
         updatedAt: "2026-05-25T08:34:47.162Z",

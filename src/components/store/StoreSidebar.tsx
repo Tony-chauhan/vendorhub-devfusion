@@ -41,7 +41,7 @@ export default function StoreSidebar({ storeInfo }: StoreSidebarProps) {
             )}
           </div>
           <p className="text-slate-800 font-extrabold text-sm text-center">
-            {storeInfo?.name || 'Happy Shop'}
+            {storeInfo?.name || 'S-mart'}
           </p>
         </div>
 

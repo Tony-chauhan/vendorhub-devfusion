@@ -132,7 +132,7 @@ export default function CreateStorePage() {
                   onChange={onChangeHandler}
                   value={storeInfo.username}
                   type="text"
-                  placeholder="e.g. happyshop"
+                  placeholder="e.g. smart"
                   className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-850 transition-all font-semibold placeholder:text-slate-400"
                   required
                 />
@@ -148,7 +148,7 @@ export default function CreateStorePage() {
                   onChange={onChangeHandler}
                   value={storeInfo.name}
                   type="text"
-                  placeholder="e.g. Happy Shop Electronics"
+                  placeholder="e.g. S-mart Electronics"
                   className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-850 transition-all font-semibold placeholder:text-slate-400"
                   required
                 />
