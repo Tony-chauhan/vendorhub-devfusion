@@ -613,7 +613,7 @@ export const productDummyData = [
         description: "11-inch creative tablet featuring an advanced drawing stylus with 4096 levels of pressure sensitivity. Crisp AMOLED screen with high color fidelity, perfect for digital artists, designers, and notes.",
         mrp: 599,
         price: 499,
-        images: [product_img7, "https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&auto=format&fit=crop&q=60"],
+        images: ["https://images.unsplash.com/photo-1561154464-82e9adf32764?w=600&auto=format&fit=crop&q=60"],
         storeId: "seller_1",
         inStock: true,
         store: dummyStoreData,
