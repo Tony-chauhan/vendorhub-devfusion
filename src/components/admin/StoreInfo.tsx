@@ -86,7 +86,7 @@ export default function StoreInfo({ store }: StoreInfoProps) {
           </div>
           <div className="flex items-center space-x-2">
             <Calendar className="w-4 h-4 text-slate-400 shrink-0" />
-            <span>Registered: {new Date(store.createdAt).toLocaleDateString()}</span>
+            <span>Registered: {new Date(store.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
           </div>
         </div>
 
