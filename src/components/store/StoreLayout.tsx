@@ -31,9 +31,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   ) : isSeller ? (
     <div className="flex flex-col h-screen bg-slate-50">
       <StoreNavbar />
-      <div className="flex flex-1 items-start h-full overflow-y-scroll no-scrollbar">
+      <div className="flex flex-1 items-start h-full overflow-y-auto">
         <StoreSidebar storeInfo={storeInfo} />
-        <main className="flex-1 h-full p-6 sm:p-10 overflow-y-scroll no-scrollbar animate-in fade-in duration-300">
+        <main className="flex-1 h-full p-6 sm:p-10 overflow-y-auto animate-in fade-in duration-300">
           {children}
         </main>
       </div>

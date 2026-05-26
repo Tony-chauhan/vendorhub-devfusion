@@ -747,8 +747,8 @@ export const storesDummyData = [
         logo: gs_logo,
         email: "dharmenderchauhan@example.com",
         contact: "+0 1234567890",
-        createdAt: "2025-08-22T08:22:16.189Z",
-        updatedAt: "2025-08-22T08:22:44.273Z",
+        createdAt: "2026-05-25T08:22:16.189Z",
+        updatedAt: "2026-05-25T08:22:44.273Z",
         user: dummyUserData,
     },
     {
@@ -763,8 +763,8 @@ export const storesDummyData = [
         logo: happy_store,
         email: "happyshop@example.com",
         contact: "+0 123456789",
-        createdAt: "2025-08-22T08:34:15.155Z",
-        updatedAt: "2025-08-22T08:34:47.162Z",
+        createdAt: "2026-05-25T08:34:15.155Z",
+        updatedAt: "2026-05-25T08:34:47.162Z",
         user: dummyUserData,
     }
 ]
