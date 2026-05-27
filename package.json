@@ -15,6 +15,7 @@
     "@imagekit/nodejs": "^7.6.2",
     "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.8.0",
+    "@reduxjs/toolkit": "^2.8.2",
     "canvas-confetti": "^1.9.4",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.40.0",
@@ -27,8 +28,7 @@
     "react-dom": "19.2.4",
     "react-hot-toast": "^2.5.2",
     "react-redux": "^9.2.0",
-    "recharts": "^3.8.1",
-    "@reduxjs/toolkit": "^2.8.2"
+    "recharts": "^3.8.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -41,6 +41,7 @@
     "eslint-config-next": "16.2.6",
     "prisma": "^7.8.0",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vercel": "^54.4.1"
   }
 }

@@ -134,7 +134,20 @@ function ShopContent() {
 
     // 2. Category matching
     if (activeCategory) {
-      if (prod.category.toLowerCase() !== activeCategory.toLowerCase()) {
+      const catLower = activeCategory.toLowerCase();
+      let matchedCategories = [catLower];
+
+      if (catLower === 'earphone' || catLower === 'earphones') {
+        matchedCategories = ['earbuds'];
+      } else if (catLower === 'headphone') {
+        matchedCategories = ['headphones'];
+      } else if (catLower === 'laptops') {
+        matchedCategories = ['laptop'];
+      } else if (catLower === 'mobile' || catLower === 'smartphone' || catLower === 'smartphones') {
+        matchedCategories = ['watch', 'tablet'];
+      }
+
+      if (!matchedCategories.includes(prod.category.toLowerCase())) {
         return false;
       }
     }
@@ -215,7 +228,20 @@ function ShopContent() {
               <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Categories</h3>
               <div className="flex flex-wrap lg:flex-col gap-2">
                 {categoriesList.map((cat) => {
-                  const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+                  let isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+                  
+                  // Handle highlights for alias query categories
+                  const activeLower = activeCategory.toLowerCase();
+                  if (activeLower === 'earphone' || activeLower === 'earphones') {
+                    if (cat === 'Earbuds') isActive = true;
+                  } else if (activeLower === 'headphone') {
+                    if (cat === 'Headphones') isActive = true;
+                  } else if (activeLower === 'laptops') {
+                    if (cat === 'Laptop') isActive = true;
+                  } else if (activeLower === 'mobile' || activeLower === 'smartphone' || activeLower === 'smartphones') {
+                    if (cat === 'Watch' || cat === 'Tablet') isActive = true;
+                  }
+
                   return (
                     <button
                       key={cat}

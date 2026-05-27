@@ -72,8 +72,8 @@ export default function Footer() {
     {
       title: "Marketplace",
       links: [
-        { text: "Earphones", path: "/shop?category=Earphone" },
-        { text: "Headphones", path: "/shop?category=Headphone" },
+        { text: "Earphones", path: "/shop?category=Earbuds" },
+        { text: "Headphones", path: "/shop?category=Headphones" },
         { text: "Smartphones", path: "/shop?category=Mobile" },
         { text: "Laptops", path: "/shop?category=Laptop" },
       ]
