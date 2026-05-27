@@ -74,7 +74,7 @@ export default function Footer() {
       links: [
         { text: "Earphones", path: "/shop?category=Earbuds" },
         { text: "Headphones", path: "/shop?category=Headphones" },
-        { text: "Smartphones", path: "/shop?category=Mobile" },
+        { text: "Smartwatches", path: "/shop?category=Watch" },
         { text: "Laptops", path: "/shop?category=Laptop" },
       ]
     },
