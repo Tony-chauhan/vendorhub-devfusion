@@ -773,7 +773,7 @@ export default function ProductBrowse() {
           <span>© {new Date().getFullYear()} TeamXdesign. Built for DevFusion 2.0.</span>
         </div>
         <div className="flex items-center gap-4 text-xs font-medium text-slate-400">
-          <a href="#" className="hover:text-slate-800 transition-colors">Privacy Policy</a>
+          <a href="/privacy" className="hover:text-slate-800 transition-colors">Privacy Policy</a>
           <a href="#" className="hover:text-slate-800 transition-colors">Terms of Use</a>
           <a href="#" className="hover:text-slate-800 transition-colors">Contact Support</a>
         </div>

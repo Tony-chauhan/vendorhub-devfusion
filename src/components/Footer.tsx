@@ -82,7 +82,7 @@ export default function Footer() {
       title: "Solutions",
       links: [
         { text: "Home Storefront", path: "/" },
-        { text: "Privacy Policy", path: "#" },
+        { text: "Privacy Policy", path: "/privacy" },
         { text: "Plus Premium Pricing", path: "/pricing" },
         { text: "Onboard Your Store", path: "/create-store" },
       ]
@@ -183,7 +183,7 @@ export default function Footer() {
         <div className="flex flex-col sm:flex-row items-center justify-between pt-8 text-[11px] text-slate-400">
           <p>© 2026 VendorHub Plus. Created with ❤️ under white glassmorphic aesthetic guidelines. All rights reserved.</p>
           <div className="flex space-x-4 mt-4 sm:mt-0">
-            <Link href="#" className="hover:text-slate-650">Privacy Policy</Link>
+            <Link href="/privacy" className="hover:text-slate-650">Privacy Policy</Link>
             <Link href="#" className="hover:text-slate-650">Terms of Use</Link>
             <Link href="#" className="hover:text-slate-650">Sitemap</Link>
           </div>
