@@ -532,6 +532,24 @@ export default function CheckoutPage() {
 
                     {/* Interactive Stripe input fields */}
                     <div className="flex flex-col gap-3.5">
+                      <div className="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/80 shadow-sm">
+                        <span className="text-[10px] text-indigo-900 font-extrabold uppercase tracking-wider pl-1.5 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-indigo-550 shrink-0" /> Sandbox Credentials
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCardNumber("4242 4242 4242 4242");
+                            setCardExpiry("12/28");
+                            setCardCvv("123");
+                            if (!fullName) setFullName("Dharmender Chauhan");
+                          }}
+                          className="text-[10px] text-indigo-700 hover:text-indigo-900 font-black bg-white border border-indigo-250 px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm active:scale-95 hover:shadow-indigo-200/40 flex items-center gap-1 animate-pulse"
+                        >
+                          ⚡ Autofill Mock Card
+                        </button>
+                      </div>
+
                       <div className="flex flex-col gap-1">
                         <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
                         <input
