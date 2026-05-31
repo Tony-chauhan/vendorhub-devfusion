@@ -54,6 +54,12 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
       return;
     }
 
+    if (paymentMethod === 'STRIPE') {
+      toast.success('Redirecting to secure Stripe payment sandbox...');
+      router.push('/checkout');
+      return;
+    }
+
     // Save custom checkout order in localStorage so it appears in My Orders
     const newOrder = {
       id: `order_${Math.floor(100000 + Math.random() * 900000)}`,
