@@ -22,20 +22,20 @@ import { createOrder } from "@/app/actions/orders";
 // Mock cart items for sandbox representation
 const MOCK_CART_ITEMS = [
   {
-    id: "p1",
-    name: "iPhone 15 Pro Max",
-    price: 1399,
+    id: "prod_1",
+    name: "Modern table lamp",
+    price: 29,
     quantity: 1,
-    image: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?w=100&auto=format&fit=crop&q=80",
-    vendorName: "Alpha Retailers"
+    image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+    vendorName: "S-mart"
   },
   {
-    id: "p6",
-    name: "Organic Forest Honey",
-    price: 12,
+    id: "prod_6",
+    name: "Security Camera",
+    price: 29,
     quantity: 2,
-    image: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=100&auto=format&fit=crop&q=80",
-    vendorName: "Western Ghats Eco Shop"
+    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
+    vendorName: "S-mart"
   }
 ];
 
