@@ -19,7 +19,7 @@ import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { createOrder } from "@/app/actions/orders";
 
-// Mock cart items for sandbox representation
+// Mock cart items for sandbox representation (aligned with actual DB prod IDs)
 const MOCK_CART_ITEMS = [
   {
     id: "prod_1",
@@ -51,9 +51,8 @@ export default function CheckoutPage() {
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("Bangalore");
   const [zipCode, setZipCode] = useState("");
-  const [selectedGateway, setSelectedGateway] = useState<"stripe" | "razorpay">("stripe");
+  const [selectedGateway, setSelectedGateway] = useState<"stripe" | "razorpay" | "cod">("stripe");
   const [formError, setFormError] = useState("");
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   // Card input states
   const [cardNumber, setCardNumber] = useState("");
@@ -64,6 +63,31 @@ export default function CheckoutPage() {
   const [upiId, setUpiId] = useState("");
   const [upiTab, setUpiTab] = useState<"id" | "qr">("id");
   const [isProcessingSim, setIsProcessingSim] = useState(false);
+
+  // Card number input formatter (insert spaces every 4 digits)
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 16) value = value.slice(0, 16);
+    const formatted = value.replace(/(\d{4})(?=\d)/g, "$1 ");
+    setCardNumber(formatted);
+  };
+
+  // Expiry date input formatter (MM/YY)
+  const handleCardExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 4) value = value.slice(0, 4);
+    if (value.length > 2) {
+      value = `${value.slice(0, 2)}/${value.slice(2)}`;
+    }
+    setCardExpiry(value);
+  };
+
+  // CVV code input formatter (3 digits)
+  const handleCardCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, "");
+    if (value.length > 3) value = value.slice(0, 3);
+    setCardCvv(value);
+  };
 
   // Summary Calculations
   const subtotal = MOCK_CART_ITEMS.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -89,37 +113,40 @@ export default function CheckoutPage() {
       }
 
       const particleCount = 50 * (timeLeft / duration);
-      // since particles fall down, animate a bit higher than they would
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 } });
       confetti({ ...defaults, particleCount, origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 } });
     }, 250);
   };
 
-  // Submit Handler - Intercept to open Payment Sandbox
+  // Unified payment/order submission handler
   const handlePayment = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
 
+    // 1. Shipping form validation
     if (!fullName || !phone || !street || !zipCode) {
       setFormError("Please fill out all shipping details before proceeding.");
       return;
     }
 
-    // Open payment sandbox simulation modal
-    setShowPaymentModal(true);
-  };
-
-  // Final Simulated Payment Handler
-  const submitFinalPayment = () => {
-    // Validate inputs based on gateway
+    // 2. Inline payment validation based on selected gateway
     if (selectedGateway === "stripe") {
-      if (!cardNumber || !cardExpiry || !cardCvv) {
-        alert("Please fill out all simulated credit card fields.");
+      const rawCard = cardNumber.replace(/\s/g, "");
+      if (rawCard.length < 16) {
+        setFormError("Stripe payment simulated: Card number must be 16 digits.");
         return;
       }
-    } else {
-      if (upiTab === "id" && !upiId) {
-        alert("Please enter a mock UPI ID to proceed.");
+      if (cardExpiry.length < 5) {
+        setFormError("Stripe payment simulated: Card expiry must be in MM/YY format.");
+        return;
+      }
+      if (cardCvv.length < 3) {
+        setFormError("Stripe payment simulated: CVV code must be 3 digits.");
+        return;
+      }
+    } else if (selectedGateway === "razorpay") {
+      if (upiTab === "id" && (!upiId || !upiId.includes("@"))) {
+        setFormError("Razorpay simulated: Please enter a valid mock UPI ID containing '@' (e.g. name@upi).");
         return;
       }
     }
@@ -143,17 +170,16 @@ export default function CheckoutPage() {
         });
 
         setIsProcessingSim(false);
-        setShowPaymentModal(false);
 
         if (result.success) {
-          const orderNum = result.orderNumber || "VNH-104820";
+          const orderNum = result.orderNumber || `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
           setGeneratedOrderNum(orderNum);
 
           // Save custom checkout order in localStorage so it appears in My Orders
           const newOrder = {
             id: result.orderId || `order_${Math.floor(100000 + Math.random() * 900000)}`,
             total: totalAmount,
-            status: "PLACED",
+            status: selectedGateway === "cod" ? "PLACED" : "CONFIRMED", // Auto-confirmed if mock-paid online
             createdAt: new Date().toISOString(),
             address: {
               name: fullName,
@@ -175,7 +201,7 @@ export default function CheckoutPage() {
               }
             })),
             user: {
-              name: "Dharmender Chauhan"
+              name: fullName || "Dharmender Chauhan"
             }
           };
 
@@ -194,7 +220,7 @@ export default function CheckoutPage() {
           setIsSuccess(true);
           triggerConfetti();
         } else {
-          setFormError(result.error || "Payment transaction rejected by sandbox.");
+          setFormError(result.error || "Sandbox transaction rejected by server backend.");
         }
       });
     }, 1500); // 1.5s simulated gateway processing latency
@@ -210,15 +236,21 @@ export default function CheckoutPage() {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ duration: 0.5 }}
-          className="max-w-xl w-full bg-white border border-slate-200/80 p-8 sm:p-10 rounded-3xl shadow-2xl flex flex-col items-center text-center gap-6"
+          className="max-w-xl w-full bg-white border border-slate-200/85 p-8 sm:p-10 rounded-3xl shadow-2xl flex flex-col items-center text-center gap-6"
         >
-          <div className="bg-emerald-500/10 p-4.5 rounded-full border border-emerald-500/20 shadow-lg shadow-emerald-500/10">
+          <div className="bg-emerald-500/10 p-4.5 rounded-full border border-emerald-500/20 shadow-lg shadow-emerald-500/10 animate-pulse">
             <CheckCircle className="h-12 w-12 text-emerald-600" />
           </div>
 
           <div className="flex flex-col gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">Payment Successful!</h1>
-            <p className="text-slate-500 text-sm">Thank you for your purchase. Your order has been registered in the system sandbox.</p>
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
+              {selectedGateway === "cod" ? "Order Placed Successfully!" : "Payment Successful!"}
+            </h1>
+            <p className="text-slate-500 text-sm">
+              {selectedGateway === "cod" 
+                ? "Your Cash on Delivery order is confirmed and hyperlocally scheduled." 
+                : "Thank you for your purchase. Your payment was verified instantly inside the Stripe/Razorpay sandbox."}
+            </p>
           </div>
 
           {/* Order Details Panel */}
@@ -234,7 +266,7 @@ export default function CheckoutPage() {
             <div className="flex justify-between items-center">
               <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">Delivery Mode</span>
               <span className="font-semibold text-slate-700 flex items-center gap-1.5">
-                <Truck className="h-4 w-4 text-purple-600" /> Hyperlocal Express
+                <Truck className="h-4 w-4 text-purple-600 animate-bounce" /> Hyperlocal Express
               </span>
             </div>
           </div>
@@ -243,7 +275,7 @@ export default function CheckoutPage() {
           <div className="w-full py-4 flex flex-col gap-4">
             <div className="flex items-center justify-between text-[10px] uppercase font-bold tracking-wider text-slate-400">
               <span>Order Tracking Journey</span>
-              <span className="text-purple-600">Status: Placed</span>
+              <span className="text-purple-600 font-black">Status: {selectedGateway === "cod" ? "Placed" : "Confirmed"}</span>
             </div>
             <div className="flex items-center w-full justify-between relative px-2">
               <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 z-0" />
@@ -263,9 +295,9 @@ export default function CheckoutPage() {
               </div>
             </div>
             <div className="grid grid-cols-4 text-center text-[9px] font-bold text-slate-400 leading-tight">
-              <span className="text-purple-600">Placed</span>
-              <span>Confirmed</span>
-              <span>Shipped</span>
+              <span className="text-purple-600 font-extrabold">{selectedGateway === "cod" ? "Placed" : "Confirmed"}</span>
+              <span>Sorted</span>
+              <span>Transit</span>
               <span>Delivered</span>
             </div>
           </div>
@@ -279,7 +311,7 @@ export default function CheckoutPage() {
             </Link>
             <button
               onClick={() => {
-                alert(`Order tracking page integration is active. Order ID: ${generatedOrderNum}`);
+                alert(`Hyperlocal real-time tracking dashboard is simulated. Order ID: ${generatedOrderNum}`);
               }}
               className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/15 transition-all cursor-pointer"
             >
@@ -296,11 +328,11 @@ export default function CheckoutPage() {
       
       {/* Mini Glassmorphic Header */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/75 border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shadow-sm">
-        <Link href="/" className="flex items-center gap-2 text-slate-500 hover:text-slate-800 transition-colors">
+        <Link href="/" className="flex items-center gap-2 text-slate-550 hover:text-slate-800 transition-colors">
           <ArrowLeft className="h-5 w-5" />
           <span className="text-sm font-semibold">Back to Marketplace</span>
         </Link>
-        <span className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-700">
+        <span className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-750">
           Secure Sandbox Checkout
         </span>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-sm">
@@ -336,7 +368,7 @@ export default function CheckoutPage() {
                   placeholder="Dharmender Chauhan"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
                 />
               </div>
               <div className="flex flex-col gap-2">
@@ -346,7 +378,7 @@ export default function CheckoutPage() {
                   placeholder="+91 9876543210"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
                 />
               </div>
             </div>
@@ -358,7 +390,7 @@ export default function CheckoutPage() {
                 placeholder="Flat No. 402, Royal Residency, Indiranagar"
                 value={street}
                 onChange={(e) => setStreet(e.target.value)}
-                className="bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
+                className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
               />
             </div>
 
@@ -368,7 +400,7 @@ export default function CheckoutPage() {
                 <select
                   value={city}
                   onChange={(e) => setCity(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-xl py-3.5 px-4 text-sm text-slate-800 focus:outline-none transition-all cursor-pointer"
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3.5 px-4 text-sm text-slate-800 focus:outline-none transition-all cursor-pointer font-semibold"
                 >
                   <option value="Bangalore">Bangalore Hub</option>
                   <option value="Srinagar">Srinagar Hub</option>
@@ -384,48 +416,265 @@ export default function CheckoutPage() {
                   placeholder="560038"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
-                  className="bg-slate-50 border border-slate-200 hover:border-slate-350 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all"
+                  className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
                 />
               </div>
             </div>
           </div>
 
-          {/* Section 2: Payment Gateway Selection */}
+          {/* Section 2: Inline Payment Gateway Sandbox Selection */}
           <div className="bg-white border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-md shadow-slate-100 flex flex-col gap-5">
             <h2 className="font-black text-lg text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-200">
               <CreditCard className="h-5 w-5 text-purple-600" /> 2. Payment Gateway Sandbox
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Stripe */}
               <button
                 type="button"
                 onClick={() => setSelectedGateway("stripe")}
-                className={`p-5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
+                className={`p-4.5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
                   selectedGateway === "stripe"
-                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold"
-                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold shadow-sm shadow-indigo-100"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300"
                 }`}
               >
-                <span className="text-xs uppercase font-extrabold tracking-widest text-slate-400">Stripe Sandbox</span>
-                <span className="text-base font-black text-slate-800">Direct Card Settlement</span>
-                <span className="text-[10px] text-slate-500 leading-tight">Instant confirmation with confetti triggers.</span>
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">Stripe Gateway</span>
+                <span className="text-sm font-black text-slate-800">Credit Card</span>
+                <span className="text-[10px] text-slate-450 leading-tight">Instant simulated credit card settlement.</span>
               </button>
 
               {/* Razorpay */}
               <button
                 type="button"
                 onClick={() => setSelectedGateway("razorpay")}
-                className={`p-5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
+                className={`p-4.5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
                   selectedGateway === "razorpay"
-                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold"
-                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold shadow-sm shadow-indigo-100"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300"
                 }`}
               >
-                <span className="text-xs uppercase font-extrabold tracking-widest text-slate-400">Razorpay Sandbox</span>
-                <span className="text-base font-black text-slate-800">UPI / QR & NetBanking</span>
-                <span className="text-[10px] text-slate-500 leading-tight">Frictionless domestic settlement simulators.</span>
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">Razorpay UPI</span>
+                <span className="text-sm font-black text-slate-800">UPI / QR Scan</span>
+                <span className="text-[10px] text-slate-450 leading-tight">Unified domestic wallet settlement simulator.</span>
               </button>
+
+              {/* Cash on Delivery */}
+              <button
+                type="button"
+                onClick={() => setSelectedGateway("cod")}
+                className={`p-4.5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
+                  selectedGateway === "cod"
+                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold shadow-sm shadow-indigo-100"
+                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300"
+                }`}
+              >
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">COD Option</span>
+                <span className="text-sm font-black text-slate-800">Cash on Delivery</span>
+                <span className="text-[10px] text-slate-450 leading-tight">Safe local settlement at shipping arrival.</span>
+              </button>
+            </div>
+
+            {/* Dynamic Inline Forms via AnimatePresence */}
+            <div className="border border-slate-150 rounded-2xl p-5 bg-slate-50/60 shadow-inner">
+              <AnimatePresence mode="wait">
+                {selectedGateway === "stripe" && (
+                  <motion.div
+                    key="stripe"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex flex-col gap-5 overflow-hidden"
+                  >
+                    {/* Visual Digital Credit Card Graphic */}
+                    <div className="relative w-full max-w-[290px] h-40 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-white/10 p-5 flex flex-col justify-between text-white shadow-lg shadow-indigo-950/20 overflow-hidden shrink-0 mx-auto transition-transform hover:scale-[1.01]">
+                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
+                      <div className="flex justify-between items-start">
+                        <div className="flex flex-col gap-1">
+                          <span className="text-[7.5px] uppercase tracking-widest text-slate-450 font-extrabold">Stripe Sandbox Card</span>
+                          <div className="w-8 h-6 bg-amber-500/25 rounded border border-amber-500/35 flex items-center justify-center">
+                            <div className="grid grid-cols-2 gap-0.5 w-4 h-3.5 opacity-80">
+                              <div className="border border-amber-500/40 rounded-[1px]"></div>
+                              <div className="border border-amber-500/40 rounded-[1px]"></div>
+                              <div className="border border-amber-500/40 rounded-[1px]"></div>
+                              <div className="border border-amber-500/40 rounded-[1px]"></div>
+                            </div>
+                          </div>
+                        </div>
+                        <span className="font-black italic text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-300">stripe</span>
+                      </div>
+
+                      <div className="flex flex-col gap-1.5">
+                        {/* Masked Card Number */}
+                        <div className="font-mono text-xs sm:text-sm tracking-[0.25em] font-medium text-slate-100">
+                          {cardNumber || "•••• •••• •••• ••••"}
+                        </div>
+
+                        <div className="flex justify-between items-end text-[9px]">
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">Cardholder</span>
+                            <span className="font-bold tracking-wide truncate max-w-[130px]">{fullName || "Dharmender Chauhan"}</span>
+                          </div>
+                          <div className="flex gap-4 shrink-0">
+                            <div className="flex flex-col gap-0.5 items-end">
+                              <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">Expires</span>
+                              <span className="font-mono font-bold">{cardExpiry || "MM/YY"}</span>
+                            </div>
+                            <div className="flex flex-col gap-0.5 items-end">
+                              <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">CVV</span>
+                              <span className="font-mono font-bold">{cardCvv ? "•••" : "•••"}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Interactive Stripe input fields */}
+                    <div className="flex flex-col gap-3.5">
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
+                        <input
+                          type="text"
+                          placeholder="Dharmender Chauhan"
+                          value={fullName}
+                          onChange={(e) => setFullName(e.target.value)}
+                          className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
+                        />
+                      </div>
+
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Card Number</label>
+                        <div className="relative">
+                          <input
+                            type="text"
+                            placeholder="4242 4242 4242 4242"
+                            value={cardNumber}
+                            onChange={handleCardNumberChange}
+                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono tracking-widest"
+                          />
+                          <CreditCard className="w-4 h-4 absolute right-3.5 top-3 text-slate-400" />
+                        </div>
+                        <span className="text-[9px] text-slate-450 font-medium">Use '4242 4242 4242 4242' for simulated Stripe approvals.</span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Expiry Date</label>
+                          <input
+                            type="text"
+                            placeholder="12/28"
+                            value={cardExpiry}
+                            onChange={handleCardExpiryChange}
+                            maxLength={5}
+                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">CVV Code</label>
+                          <input
+                            type="password"
+                            placeholder="123"
+                            maxLength={3}
+                            value={cardCvv}
+                            onChange={handleCardCvvChange}
+                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+
+                {selectedGateway === "razorpay" && (
+                  <motion.div
+                    key="razorpay"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex flex-col gap-4 overflow-hidden"
+                  >
+                    {/* UPI tabs */}
+                    <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                      <button
+                        type="button"
+                        onClick={() => setUpiTab("id")}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                          upiTab === "id"
+                            ? "bg-white text-indigo-950 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        UPI ID
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUpiTab("qr")}
+                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                          upiTab === "qr"
+                            ? "bg-white text-indigo-950 shadow-sm"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        Simulate Scan QR
+                      </button>
+                    </div>
+
+                    {upiTab === "id" ? (
+                      <div className="flex flex-col gap-1">
+                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Enter UPI Address</label>
+                        <input
+                          type="text"
+                          placeholder="dharmender@okaxis"
+                          value={upiId}
+                          onChange={(e) => setUpiId(e.target.value)}
+                          className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-mono transition-all"
+                        />
+                        <span className="text-[9px] text-slate-450 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200/80 rounded-xl gap-2.5">
+                        <div className="w-28 h-28 bg-white border border-slate-200 p-2 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden group">
+                          <div className="grid grid-cols-4 gap-1 w-full h-full opacity-80">
+                            {Array.from({ length: 16 }).map((_, i) => (
+                              <div
+                                key={i}
+                                className={`rounded-sm ${(i === 0 || i === 3 || i === 12 || i === 15 || i === 5 || i === 10) ? 'bg-indigo-950' : 'bg-indigo-950/20'}`}
+                              />
+                            ))}
+                          </div>
+                          <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 top-1/2 -translate-y-1/2 animate-bounce opacity-80 shadow-md shadow-indigo-500/50" />
+                        </div>
+                        <span className="text-[9px] text-center text-slate-440 leading-normal font-semibold max-w-xs">
+                          Scan simulation active. QR scanner validates immediate wallet confirmations.
+                        </span>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+
+                {selectedGateway === "cod" && (
+                  <motion.div
+                    key="cod"
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.25 }}
+                    className="flex flex-col gap-2 overflow-hidden text-slate-600 text-xs leading-relaxed"
+                  >
+                    <div className="bg-emerald-50/50 border border-emerald-200 p-4 rounded-xl text-emerald-800 flex items-start gap-2.5">
+                      <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
+                      <div>
+                        <strong className="font-bold text-slate-800">Cash on Delivery Active:</strong>
+                        <p className="mt-1 text-[11px] text-emerald-700/90 font-semibold">
+                          No pre-payment is required! Pay the delivery driver directly when your hyperlocal package arrives at your destination.
+                        </p>
+                      </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Simulated processing note */}
@@ -439,16 +688,16 @@ export default function CheckoutPage() {
             {/* Fulfill Action */}
             <button
               type="submit"
-              disabled={isPending}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-4 rounded-xl shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/35 transition-all flex items-center justify-center gap-1.5 mt-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99]"
+              disabled={isPending || isProcessingSim}
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-extrabold py-4 rounded-xl shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/35 transition-all flex items-center justify-center gap-1.5 mt-2 cursor-pointer hover:scale-[1.01] active:scale-[0.99] disabled:opacity-50"
             >
-              {isPending ? (
+              {isPending || isProcessingSim ? (
                 <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" /> Verifying Gateway Authentication...
+                  <Loader2 className="h-4.5 w-4.5 animate-spin" /> Verifying Inline Gateway Sandbox...
                 </>
               ) : (
                 <>
-                  Pay & Complete Sandbox Order <ChevronRight className="h-4.5 w-4.5" />
+                  {selectedGateway === "cod" ? "Place Order (COD)" : "Pay & Complete Sandbox Order"} <ChevronRight className="h-4.5 w-4.5" />
                 </>
               )}
             </button>
@@ -471,7 +720,7 @@ export default function CheckoutPage() {
                   </div>
                   <div className="flex flex-col text-xs gap-0.5">
                     <strong className="text-slate-800 font-extrabold text-sm">{item.name}</strong>
-                    <span className="text-[10px] text-slate-400">Store: {item.vendorName}</span>
+                    <span className="text-[10px] text-slate-400 font-medium">Store: {item.vendorName}</span>
                     <span className="text-[10px] text-indigo-600 font-bold bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded w-fit mt-1">Qty: {item.quantity}</span>
                   </div>
                 </div>
@@ -485,11 +734,11 @@ export default function CheckoutPage() {
           <div className="flex flex-col gap-3.5 text-xs text-slate-500 pb-6 border-b border-slate-100">
             <div className="flex justify-between">
               <span>Items Subtotal:</span>
-              <strong className="text-slate-700">${subtotal.toFixed(2)}</strong>
+              <strong className="text-slate-700 font-bold">${subtotal.toFixed(2)}</strong>
             </div>
             <div className="flex justify-between">
               <span>Local Tax GST (8%):</span>
-              <strong className="text-slate-700">${tax.toFixed(2)}</strong>
+              <strong className="text-slate-700 font-bold">${tax.toFixed(2)}</strong>
             </div>
             <div className="flex justify-between">
               <span>Hyperlocal Delivery Fee:</span>
@@ -508,194 +757,6 @@ export default function CheckoutPage() {
         </aside>
 
       </main>
-
-      {/* 🔮 MOCK SECURE PAYMENT SANDBOX MODAL */}
-      <AnimatePresence>
-        {showPaymentModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 15 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 15 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white/95 border border-slate-200/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col gap-6 relative overflow-hidden text-left"
-            >
-              {/* Background gradient flare */}
-              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
-              
-              {/* Close Button */}
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
-              >
-                ✕
-              </button>
-
-              {/* Title / Brand Header */}
-              <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-4">
-                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                  {selectedGateway === "stripe" ? "Stripe Sandbox" : "Razorpay Sandbox"} Gateways
-                </span>
-                <h3 className="text-lg font-black text-slate-900 tracking-tight">
-                  {selectedGateway === "stripe" ? "Simulate Credit Card" : "Simulate UPI / QR Code"}
-                </h3>
-              </div>
-
-              {/* Amount Due Indicator */}
-              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex justify-between items-center text-sm shadow-inner">
-                <span className="text-slate-500 font-bold">Total Order Price</span>
-                <span className="text-base font-black text-purple-600">${totalAmount}</span>
-              </div>
-
-              {/* Dynamic Forms based on Gateway */}
-              {selectedGateway === "stripe" ? (
-                // 💳 Credit Card form
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
-                    <input
-                      type="text"
-                      placeholder="Dharmender Chauhan"
-                      className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none"
-                      defaultValue={fullName}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Number</label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="4242 4242 4242 4242"
-                        value={cardNumber}
-                        onChange={(e) => setCardNumber(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 focus:outline-none w-full font-mono tracking-wider"
-                      />
-                      <CreditCard className="w-4.5 h-4.5 absolute right-3 top-2.5 text-slate-400" />
-                    </div>
-                    <span className="text-[9px] text-slate-400 font-medium">Use '4242 4242 4242 4242' for simulated Stripe approvals.</span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expiry Date</label>
-                      <input
-                        type="text"
-                        placeholder="12/28"
-                        value={cardExpiry}
-                        onChange={(e) => setCardExpiry(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
-                      />
-                    </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CVV Code</label>
-                      <input
-                        type="password"
-                        placeholder="123"
-                        maxLength={3}
-                        value={cardCvv}
-                        onChange={(e) => setCardCvv(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
-                      />
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // 📱 UPI / QR Code form
-                <div className="flex flex-col gap-4">
-                  {/* UPI Method tabs */}
-                  <div className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-                    <button
-                      type="button"
-                      onClick={() => setUpiTab("id")}
-                      className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                        upiTab === "id"
-                          ? "bg-white text-indigo-950 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      UPI ID
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setUpiTab("qr")}
-                      className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                        upiTab === "qr"
-                          ? "bg-white text-indigo-950 shadow-sm"
-                          : "text-slate-500 hover:text-slate-700"
-                      }`}
-                    >
-                      Simulate Scan QR
-                    </button>
-                  </div>
-
-                  {upiTab === "id" ? (
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enter UPI Address</label>
-                      <input
-                        type="text"
-                        placeholder="dharmender@okaxis"
-                        value={upiId}
-                        onChange={(e) => setUpiId(e.target.value)}
-                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none w-full font-mono"
-                      />
-                      <span className="text-[9px] text-slate-400 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200/80 rounded-2xl gap-3">
-                      {/* Glowing mock QR block */}
-                      <div className="w-32 h-32 bg-white border border-slate-200 p-2.5 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden group">
-                        {/* Fake QR boxes */}
-                        <div className="grid grid-cols-4 gap-1.5 w-full h-full opacity-80">
-                          {Array.from({ length: 16 }).map((_, i) => (
-                            <div
-                              key={i}
-                              className={`rounded-sm ${(i === 0 || i === 3 || i === 12 || i === 15 || i === 5 || i === 10) ? 'bg-indigo-950' : 'bg-indigo-950/20'}`}
-                            />
-                          ))}
-                        </div>
-                        {/* Pulsing overlay scan indicator */}
-                        <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 top-1/2 -translate-y-1/2 animate-bounce opacity-80 shadow-md shadow-indigo-500/50" />
-                      </div>
-                      <span className="text-[9px] text-center text-slate-400 leading-normal font-semibold max-w-xs">
-                        Scan simulation active. In live evaluations, this will simulate immediate wallet transfer confirmations.
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Fulfill Action */}
-              <div className="flex gap-3 mt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowPaymentModal(false)}
-                  className="flex-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={submitFinalPayment}
-                  disabled={isProcessingSim || isPending}
-                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold py-3 rounded-xl shadow-lg shadow-indigo-600/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01]"
-                >
-                  {isProcessingSim || isPending ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying...
-                    </>
-                  ) : (
-                    <>
-                      Simulate Payout ➔
-                    </>
-                  )}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
