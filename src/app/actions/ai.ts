@@ -285,13 +285,18 @@ export async function expandSearchQuery(
 
   // --- Smart Local Synonym Map Fallback ---
   const SYNONYM_DICTIONARY: Record<string, string[]> = {
-    phone: ["iphone", "mobile", "cell", "device", "apple"],
-    iphone: ["phone", "mobile", "cell", "device", "apple"],
+    phone: ["iphone", "mobile", "cell", "device", "smartphone", "handset"],
+    iphone: ["phone", "mobile", "cell", "device", "smartphone", "handset"],
+    earphone: ["earbuds", "headphones", "wireless", "audio", "sound"],
+    earphones: ["earbuds", "headphones", "wireless", "audio", "sound"],
+    earbud: ["earbuds", "earphones", "wireless", "audio", "sound"],
+    earbuds: ["earbuds", "earphones", "wireless", "audio", "sound"],
     kesar: ["saffron", "spices", "pure", "organic", "srinagar"],
     saffron: ["kesar", "spices", "pure", "organic", "srinagar"],
     spices: ["saffron", "kesar", "organic", "pure"],
-    audio: ["headphones", "wireless", "speaker", "noise cancelling", "anc"],
+    audio: ["headphones", "earbuds", "wireless", "speaker", "noise cancelling", "anc"],
     headphone: ["audio", "wireless", "speaker", "headphones", "anc"],
+    headphones: ["headphone", "audio", "wireless", "speaker", "anc"],
     chair: ["office", "furniture", "study", "ergonomic", "seat"],
     desk: ["table", "study", "wooden", "furniture", "oak"],
     table: ["desk", "study", "wooden", "furniture", "oak"],
@@ -307,6 +312,14 @@ export async function expandSearchQuery(
 
   // Match direct keys and key prefixes
   for (const [key, syns] of Object.entries(SYNONYM_DICTIONARY)) {
+    // Prevent "phone" key matching if the search term is "earphone" or "headphone"
+    if (key === 'phone' && (queryLower.includes('earphone') || queryLower.includes('headphone'))) {
+      continue;
+    }
+    if (key === 'iphone' && (queryLower.includes('earphone') || queryLower.includes('headphone'))) {
+      continue;
+    }
+
     if (queryLower.includes(key) || key.includes(queryLower)) {
       matchedSynonyms.push(...syns);
     }
