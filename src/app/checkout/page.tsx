@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import confetti from "canvas-confetti";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { createOrder } from "@/app/actions/orders";
 
 // Mock cart items for sandbox representation
@@ -53,6 +53,17 @@ export default function CheckoutPage() {
   const [zipCode, setZipCode] = useState("");
   const [selectedGateway, setSelectedGateway] = useState<"stripe" | "razorpay">("stripe");
   const [formError, setFormError] = useState("");
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+
+  // Card input states
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+
+  // UPI input states
+  const [upiId, setUpiId] = useState("");
+  const [upiTab, setUpiTab] = useState<"id" | "qr">("id");
+  const [isProcessingSim, setIsProcessingSim] = useState(false);
 
   // Summary Calculations
   const subtotal = MOCK_CART_ITEMS.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -84,7 +95,7 @@ export default function CheckoutPage() {
     }, 250);
   };
 
-  // Submit Handler
+  // Submit Handler - Intercept to open Payment Sandbox
   const handlePayment = (e: React.FormEvent) => {
     e.preventDefault();
     setFormError("");
@@ -94,73 +105,99 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Open payment sandbox simulation modal
+    setShowPaymentModal(true);
+  };
+
+  // Final Simulated Payment Handler
+  const submitFinalPayment = () => {
+    // Validate inputs based on gateway
+    if (selectedGateway === "stripe") {
+      if (!cardNumber || !cardExpiry || !cardCvv) {
+        alert("Please fill out all simulated credit card fields.");
+        return;
+      }
+    } else {
+      if (upiTab === "id" && !upiId) {
+        alert("Please enter a mock UPI ID to proceed.");
+        return;
+      }
+    }
+
+    setIsProcessingSim(true);
+
     // Prepare full address string
     const fullAddress = `${street}, ${city}, PIN: ${zipCode}. Phone: ${phone}`;
 
-    startTransition(async () => {
-      // Create order using Server Action
-      const result = await createOrder({
-        totalAmount,
-        address: fullAddress,
-        items: MOCK_CART_ITEMS.map(item => ({
-          productId: item.id,
-          quantity: item.quantity,
-          price: item.price
-        }))
-      });
-
-      if (result.success) {
-        const orderNum = result.orderNumber || "VNH-104820";
-        setGeneratedOrderNum(orderNum);
-
-        // Save custom checkout order in localStorage so it appears in My Orders
-        const newOrder = {
-          id: result.orderId || `order_${Math.floor(100000 + Math.random() * 900000)}`,
-          total: totalAmount,
-          status: "PLACED",
-          createdAt: new Date().toISOString(),
-          address: {
-            name: fullName,
-            street: street,
-            city: city,
-            zip: zipCode,
-            state: "KA",
-            country: "India",
-            phone: phone
-          },
-          orderItems: MOCK_CART_ITEMS.map((item) => ({
-            price: item.price,
+    setTimeout(() => {
+      startTransition(async () => {
+        // Create order using Server Action
+        const result = await createOrder({
+          totalAmount,
+          address: fullAddress,
+          items: MOCK_CART_ITEMS.map(item => ({
+            productId: item.id,
             quantity: item.quantity,
-            product: {
-              id: item.id,
-              name: item.name,
-              images: [item.image],
-              category: "Electronics"
+            price: item.price
+          }))
+        });
+
+        setIsProcessingSim(false);
+        setShowPaymentModal(false);
+
+        if (result.success) {
+          const orderNum = result.orderNumber || "VNH-104820";
+          setGeneratedOrderNum(orderNum);
+
+          // Save custom checkout order in localStorage so it appears in My Orders
+          const newOrder = {
+            id: result.orderId || `order_${Math.floor(100000 + Math.random() * 900000)}`,
+            total: totalAmount,
+            status: "PLACED",
+            createdAt: new Date().toISOString(),
+            address: {
+              name: fullName,
+              street: street,
+              city: city,
+              zip: zipCode,
+              state: "KA",
+              country: "India",
+              phone: phone
+            },
+            orderItems: MOCK_CART_ITEMS.map((item) => ({
+              price: item.price,
+              quantity: item.quantity,
+              product: {
+                id: item.id,
+                name: item.name,
+                images: [item.image],
+                category: "Electronics"
+              }
+            })),
+            user: {
+              name: "Dharmender Chauhan"
             }
-          })),
-          user: {
-            name: "Dharmender Chauhan"
-          }
-        };
+          };
 
-        if (typeof window !== 'undefined') {
-          const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
-          let localOrders: any[] = [];
-          if (savedOrdersStr) {
-            try {
-              localOrders = JSON.parse(savedOrdersStr);
-            } catch (err) {}
+          if (typeof window !== 'undefined') {
+            const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
+            let localOrders: any[] = [];
+            if (savedOrdersStr) {
+              try {
+                localOrders = JSON.parse(savedOrdersStr);
+              } catch (err) {}
+            }
+            localOrders.unshift(newOrder);
+            localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
           }
-          localOrders.unshift(newOrder);
-          localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
+
+          setIsSuccess(true);
+          triggerConfetti();
+        } else {
+          setFormError(result.error || "Payment transaction rejected by sandbox.");
         }
-
-        setIsSuccess(true);
-        triggerConfetti();
-      } else {
-        setFormError(result.error || "Payment transaction rejected by sandbox.");
-      }
-    });
+      });
+    }, 1500); // 1.5s simulated gateway processing latency
   };
 
   // Success view
@@ -471,6 +508,194 @@ export default function CheckoutPage() {
         </aside>
 
       </main>
+
+      {/* 🔮 MOCK SECURE PAYMENT SANDBOX MODAL */}
+      <AnimatePresence>
+        {showPaymentModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white/95 border border-slate-200/80 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl flex flex-col gap-6 relative overflow-hidden text-left"
+            >
+              {/* Background gradient flare */}
+              <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
+              
+              {/* Close Button */}
+              <button
+                onClick={() => setShowPaymentModal(false)}
+                className="absolute top-4 right-4 text-slate-400 hover:text-slate-600 cursor-pointer text-sm"
+              >
+                ✕
+              </button>
+
+              {/* Title / Brand Header */}
+              <div className="flex flex-col gap-1.5 border-b border-slate-200 pb-4">
+                <span className="text-[10px] text-slate-400 font-extrabold uppercase tracking-widest flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  {selectedGateway === "stripe" ? "Stripe Sandbox" : "Razorpay Sandbox"} Gateways
+                </span>
+                <h3 className="text-lg font-black text-slate-900 tracking-tight">
+                  {selectedGateway === "stripe" ? "Simulate Credit Card" : "Simulate UPI / QR Code"}
+                </h3>
+              </div>
+
+              {/* Amount Due Indicator */}
+              <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl flex justify-between items-center text-sm shadow-inner">
+                <span className="text-slate-500 font-bold">Total Order Price</span>
+                <span className="text-base font-black text-purple-600">${totalAmount}</span>
+              </div>
+
+              {/* Dynamic Forms based on Gateway */}
+              {selectedGateway === "stripe" ? (
+                // 💳 Credit Card form
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
+                    <input
+                      type="text"
+                      placeholder="Dharmender Chauhan"
+                      className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none"
+                      defaultValue={fullName}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Number</label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        placeholder="4242 4242 4242 4242"
+                        value={cardNumber}
+                        onChange={(e) => setCardNumber(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 focus:outline-none w-full font-mono tracking-wider"
+                      />
+                      <CreditCard className="w-4.5 h-4.5 absolute right-3 top-2.5 text-slate-400" />
+                    </div>
+                    <span className="text-[9px] text-slate-400 font-medium">Use '4242 4242 4242 4242' for simulated Stripe approvals.</span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expiry Date</label>
+                      <input
+                        type="text"
+                        placeholder="12/28"
+                        value={cardExpiry}
+                        onChange={(e) => setCardExpiry(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CVV Code</label>
+                      <input
+                        type="password"
+                        placeholder="123"
+                        maxLength={3}
+                        value={cardCvv}
+                        onChange={(e) => setCardCvv(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                // 📱 UPI / QR Code form
+                <div className="flex flex-col gap-4">
+                  {/* UPI Method tabs */}
+                  <div className="grid grid-cols-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                    <button
+                      type="button"
+                      onClick={() => setUpiTab("id")}
+                      className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                        upiTab === "id"
+                          ? "bg-white text-indigo-950 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      UPI ID
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setUpiTab("qr")}
+                      className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                        upiTab === "qr"
+                          ? "bg-white text-indigo-950 shadow-sm"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      Simulate Scan QR
+                    </button>
+                  </div>
+
+                  {upiTab === "id" ? (
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Enter UPI Address</label>
+                      <input
+                        type="text"
+                        placeholder="dharmender@okaxis"
+                        value={upiId}
+                        onChange={(e) => setUpiId(e.target.value)}
+                        className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none w-full font-mono"
+                      />
+                      <span className="text-[9px] text-slate-400 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200/80 rounded-2xl gap-3">
+                      {/* Glowing mock QR block */}
+                      <div className="w-32 h-32 bg-white border border-slate-200 p-2.5 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden group">
+                        {/* Fake QR boxes */}
+                        <div className="grid grid-cols-4 gap-1.5 w-full h-full opacity-80">
+                          {Array.from({ length: 16 }).map((_, i) => (
+                            <div
+                              key={i}
+                              className={`rounded-sm ${(i === 0 || i === 3 || i === 12 || i === 15 || i === 5 || i === 10) ? 'bg-indigo-950' : 'bg-indigo-950/20'}`}
+                            />
+                          ))}
+                        </div>
+                        {/* Pulsing overlay scan indicator */}
+                        <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 top-1/2 -translate-y-1/2 animate-bounce opacity-80 shadow-md shadow-indigo-500/50" />
+                      </div>
+                      <span className="text-[9px] text-center text-slate-400 leading-normal font-semibold max-w-xs">
+                        Scan simulation active. In live evaluations, this will simulate immediate wallet transfer confirmations.
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Fulfill Action */}
+              <div className="flex gap-3 mt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPaymentModal(false)}
+                  className="flex-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={submitFinalPayment}
+                  disabled={isProcessingSim || isPending}
+                  className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold py-3 rounded-xl shadow-lg shadow-indigo-600/10 transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01]"
+                >
+                  {isProcessingSim || isPending ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" /> Verifying...
+                    </>
+                  ) : (
+                    <>
+                      Simulate Payout ➔
+                    </>
+                  )}
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
