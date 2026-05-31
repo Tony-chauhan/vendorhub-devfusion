@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { 
   CreditCard, 
   MapPin, 
@@ -17,29 +17,13 @@ import {
 import Link from "next/link";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
+import { useSelector, useDispatch } from "react-redux";
 import { createOrder } from "@/app/actions/orders";
-
-// Mock cart items for sandbox representation (aligned with actual DB prod IDs)
-const MOCK_CART_ITEMS = [
-  {
-    id: "prod_1",
-    name: "Modern table lamp",
-    price: 29,
-    quantity: 1,
-    image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
-    vendorName: "S-mart"
-  },
-  {
-    id: "prod_6",
-    name: "Security Camera",
-    price: 29,
-    quantity: 2,
-    image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
-    vendorName: "S-mart"
-  }
-];
+import { clearCart } from "@/lib/features/cart/cartSlice";
 
 export default function CheckoutPage() {
+  const dispatch = useDispatch();
+
   // Navigation / Success states
   const [isSuccess, setIsSuccess] = useState(false);
   const [generatedOrderNum, setGeneratedOrderNum] = useState("");
@@ -63,6 +47,54 @@ export default function CheckoutPage() {
   const [upiId, setUpiId] = useState("");
   const [upiTab, setUpiTab] = useState<"id" | "qr">("id");
   const [isProcessingSim, setIsProcessingSim] = useState(false);
+
+  // Redux items
+  const { cartItems } = useSelector((state: any) => state.cart || { cartItems: {} });
+  const productsList = useSelector((state: any) => state.product?.list || []);
+
+  const [resolvedCartItems, setResolvedCartItems] = useState<any[]>([]);
+
+  // Synchronize and resolve Redux cart items or use demo mock sandbox items
+  useEffect(() => {
+    const list: any[] = [];
+    for (const [productId, quantity] of Object.entries(cartItems)) {
+      const matched = productsList.find((p: any) => p.id === productId);
+      if (matched) {
+        list.push({
+          id: matched.id,
+          name: matched.name,
+          price: matched.price,
+          quantity: quantity as number,
+          image: matched.images?.[0] || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+          vendorName: matched.vendorName || "S-mart"
+        });
+      }
+    }
+
+    if (list.length === 0) {
+      // Fallback sandbox preview items if cart is empty
+      setResolvedCartItems([
+        {
+          id: "prod_1",
+          name: "Modern table lamp",
+          price: 29,
+          quantity: 1,
+          image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+          vendorName: "S-mart"
+        },
+        {
+          id: "prod_6",
+          name: "Security Camera",
+          price: 29,
+          quantity: 2,
+          image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
+          vendorName: "S-mart"
+        }
+      ]);
+    } else {
+      setResolvedCartItems(list);
+    }
+  }, [cartItems, productsList]);
 
   // Card number input formatter (insert spaces every 4 digits)
   const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -90,7 +122,7 @@ export default function CheckoutPage() {
   };
 
   // Summary Calculations
-  const subtotal = MOCK_CART_ITEMS.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const subtotal = resolvedCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = subtotal > 100 ? 0 : 15;
   const tax = parseFloat((subtotal * 0.08).toFixed(2)); // 8% local tax
   const totalAmount = parseFloat((subtotal + shipping + tax).toFixed(2));
@@ -162,7 +194,7 @@ export default function CheckoutPage() {
         const result = await createOrder({
           totalAmount,
           address: fullAddress,
-          items: MOCK_CART_ITEMS.map(item => ({
+          items: resolvedCartItems.map(item => ({
             productId: item.id,
             quantity: item.quantity,
             price: item.price
@@ -190,7 +222,7 @@ export default function CheckoutPage() {
               country: "India",
               phone: phone
             },
-            orderItems: MOCK_CART_ITEMS.map((item) => ({
+            orderItems: resolvedCartItems.map((item) => ({
               price: item.price,
               quantity: item.quantity,
               product: {
@@ -216,6 +248,9 @@ export default function CheckoutPage() {
             localOrders.unshift(newOrder);
             localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
           }
+
+          // Clear shopping cart on successful checkout placement
+          dispatch(clearCart());
 
           setIsSuccess(true);
           triggerConfetti();
@@ -492,7 +527,7 @@ export default function CheckoutPage() {
                       <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
                       <div className="flex justify-between items-start">
                         <div className="flex flex-col gap-1">
-                          <span className="text-[7.5px] uppercase tracking-widest text-slate-450 font-extrabold">Stripe Sandbox Card</span>
+                          <span className="text-[7.5px] uppercase tracking-widest text-slate-455 font-extrabold">Stripe Sandbox Card</span>
                           <div className="w-8 h-6 bg-amber-500/25 rounded border border-amber-500/35 flex items-center justify-center">
                             <div className="grid grid-cols-2 gap-0.5 w-4 h-3.5 opacity-80">
                               <div className="border border-amber-500/40 rounded-[1px]"></div>
@@ -513,16 +548,16 @@ export default function CheckoutPage() {
 
                         <div className="flex justify-between items-end text-[9px]">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">Cardholder</span>
+                            <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">Cardholder</span>
                             <span className="font-bold tracking-wide truncate max-w-[130px]">{fullName || "Dharmender Chauhan"}</span>
                           </div>
                           <div className="flex gap-4 shrink-0">
                             <div className="flex flex-col gap-0.5 items-end">
-                              <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">Expires</span>
+                              <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">Expires</span>
                               <span className="font-mono font-bold">{cardExpiry || "MM/YY"}</span>
                             </div>
                             <div className="flex flex-col gap-0.5 items-end">
-                              <span className="text-[6.5px] uppercase tracking-wider text-slate-450 font-bold">CVV</span>
+                              <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">CVV</span>
                               <span className="font-mono font-bold">{cardCvv ? "•••" : "•••"}</span>
                             </div>
                           </div>
@@ -649,7 +684,7 @@ export default function CheckoutPage() {
                           onChange={(e) => setUpiId(e.target.value)}
                           className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-mono transition-all"
                         />
-                        <span className="text-[9px] text-slate-450 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
+                        <span className="text-[9px] text-slate-455 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200/80 rounded-xl gap-2.5">
@@ -730,7 +765,7 @@ export default function CheckoutPage() {
 
           {/* Cart list representation */}
           <div className="flex flex-col gap-4">
-            {MOCK_CART_ITEMS.map((item) => (
+            {resolvedCartItems.map((item) => (
               <div key={item.id} className="flex gap-4 items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex gap-3 items-center">
                   <div className="h-14 w-14 border border-slate-200 rounded-xl overflow-hidden bg-slate-50 shrink-0">
