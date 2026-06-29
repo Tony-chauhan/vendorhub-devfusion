@@ -5,38 +5,119 @@ import { RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { storesDummyData } from '@/assets/assets';
 import StoreInfo from '@/components/admin/StoreInfo';
+import { getPendingStores, updateStoreStatus } from '@/app/actions/admin';
 
 export default function AdminApprove() {
   const [isPending, startTransition] = useTransition();
   const [stores, setStores] = useState<any[]>([]);
 
   useEffect(() => {
-    // Show stores that are pending review
-    const pendingStores = storesDummyData.map((s) => ({
-      ...s,
-      status: s.id === 'cmemkqnzm000htat8u7n8cpte' ? 'pending' : s.status,
-    }));
-    setStores(pendingStores);
+    const fetchStores = async () => {
+      // 1. Try to fetch pending stores from database
+      try {
+        const res = await getPendingStores();
+        if (res.success && res.stores && res.stores.length > 0) {
+          const dbStores = res.stores.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            description: s.description || "",
+            username: s.vendor?.name?.toLowerCase().replace(/\s+/g, "") || "vendor",
+            address: s.location,
+            logo: s.logo,
+            email: s.vendor?.email || "",
+            contact: "+91 99999 99999",
+            createdAt: s.createdAt.toString(),
+            status: s.status.toLowerCase(),
+            user: {
+              name: s.vendor?.name || "Vendor",
+              email: s.vendor?.email || "",
+              image: null,
+            }
+          }));
+          setStores(dbStores);
+          return;
+        }
+      } catch (err) {
+        console.error("Error loading stores from database, falling back:", err);
+      }
+
+      // 2. Check localStorage for mock simulated store application
+      const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
+      if (mockStoreStr) {
+        const mockStore = JSON.parse(mockStoreStr);
+        if (mockStore.status === "PENDING") {
+          const formattedMockStore = {
+            id: mockStore.id || "mock_store_id",
+            name: mockStore.name,
+            description: mockStore.description || "",
+            username: mockStore.username || "dharmender",
+            address: mockStore.location,
+            logo: mockStore.logo,
+            email: mockStore.email || "dharmenderchauhan802@gmail.com",
+            contact: mockStore.contact || "+91 98765 43210",
+            createdAt: mockStore.createdAt || new Date().toISOString(),
+            status: mockStore.status.toLowerCase(),
+            user: mockStore.user || {
+              name: "Dharmender Chauhan",
+              email: "dharmenderchauhan802@gmail.com",
+              image: null,
+            }
+          };
+          setStores([formattedMockStore]);
+          return;
+        }
+      }
+
+      // 3. Fallback dummy data mapped to status: pending for demonstration
+      const pendingStores = storesDummyData.map((s) => ({
+        ...s,
+        status: s.id === 'cmemkqnzm000htat8u7n8cpte' ? 'pending' : s.status,
+      }));
+      setStores(pendingStores);
+    };
+
+    fetchStores();
   }, []);
 
   const handleApprove = (storeId: string, nextStatus: 'approved' | 'rejected') => {
     startTransition(async () => {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
-
-      setStores((prev) =>
-        prev.map((s) => {
-          if (s.id === storeId) {
-            toast.success(`Store registration request successfully: ${nextStatus.toUpperCase()}`);
-            return { ...s, status: nextStatus };
+      try {
+        // If it's a real database store ID (does not start with 'mock_') and we're in DB mode, update it
+        if (!storeId.startsWith("mock_") && storeId !== "cmemkqnzm000htat8u7n8cpte") {
+          const res = await updateStoreStatus(storeId, nextStatus === "approved" ? "APPROVED" : "REJECTED");
+          if (!res.success) {
+            toast.error(res.error || "Failed to update store status");
+            return;
           }
-          return s;
-        })
-      );
+        } else {
+          // If it is the mock store in localStorage, update it!
+          const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
+          if (mockStoreStr) {
+            const mockStore = JSON.parse(mockStoreStr);
+            if (mockStore.id === storeId || storeId === "mock_store_id") {
+              mockStore.status = nextStatus.toUpperCase();
+              localStorage.setItem("vendorhub_mock_store", JSON.stringify(mockStore));
+              
+              // Promote user role to VENDOR if approved
+              if (nextStatus === "approved") {
+                localStorage.setItem("vendorhub_mock_user_role", "VENDOR");
+              }
+            }
+          }
+        }
+
+        toast.success(`Store registration request successfully: ${nextStatus.toUpperCase()}`);
+        setStores((prev) =>
+          prev.map((s) => (s.id === storeId ? { ...s, status: nextStatus } : s))
+        );
+      } catch (err: any) {
+        toast.error("Failed to update status: " + err.message);
+      }
     });
   };
 
   const pendingList = stores.filter((s) => s.status === 'pending');
+
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-300">

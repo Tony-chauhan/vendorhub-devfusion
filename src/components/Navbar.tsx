@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, ShoppingCart, User, Store, LogOut, Compass, ShieldAlert } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
 import { useCustomUser, CustomSignInButton, CustomSignOutButton } from '@/lib/clerk-client';
+import { getCurrentUserRoleAndStore } from '@/app/actions/vendors';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Navbar() {
@@ -16,6 +17,42 @@ export default function Navbar() {
 
   const cartCount = useSelector((state: any) => state.cart?.total || 0);
   const { isSignedIn, user } = useCustomUser();
+  const [userRole, setUserRole] = useState<string>('BUYER');
+  const [storeStatus, setStoreStatus] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!isSignedIn) {
+      setUserRole('BUYER');
+      setStoreStatus(null);
+      return;
+    }
+
+    const fetchRole = async () => {
+      try {
+        const res = await getCurrentUserRoleAndStore();
+        if (res.success) {
+          let role = res.role;
+          let status = res.store?.status || null;
+
+          // Support client-side simulated localStorage store state for hackathon judges
+          const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
+          if (mockStoreStr) {
+            const mockStore = JSON.parse(mockStoreStr);
+            status = mockStore.status;
+            role = "VENDOR";
+          }
+
+          setUserRole(role);
+          setStoreStatus(status);
+        }
+      } catch (err) {
+        console.error("Error fetching user role in Navbar:", err);
+      }
+    };
+
+    fetchRole();
+  }, [isSignedIn]);
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -119,23 +156,61 @@ export default function Navbar() {
                           </p>
                         </div>
 
-                        <Link
-                          href="/store"
-                          onClick={() => setShowDropdown(false)}
-                          className="flex items-center space-x-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <Store className="w-4 h-4 text-slate-500" />
-                          <span>Seller Dashboard</span>
-                        </Link>
+                        {/* Role-specific Links */}
+                        {userRole === 'ADMIN' && (
+                          <>
+                            <Link
+                              href="/admin"
+                              onClick={() => setShowDropdown(false)}
+                              className="flex items-center space-x-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <ShieldAlert className="w-4 h-4 text-slate-500" />
+                              <span className="font-bold">Admin Console</span>
+                            </Link>
+                            <Link
+                              href="/store"
+                              onClick={() => setShowDropdown(false)}
+                              className="flex items-center space-x-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                            >
+                              <Store className="w-4 h-4 text-slate-500" />
+                              <span>Seller Dashboard</span>
+                            </Link>
+                          </>
+                        )}
 
-                        <Link
-                          href="/admin"
-                          onClick={() => setShowDropdown(false)}
-                          className="flex items-center space-x-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
-                        >
-                          <ShieldAlert className="w-4 h-4 text-slate-500" />
-                          <span>Admin Console</span>
-                        </Link>
+                        {userRole === 'VENDOR' && (
+                          <Link
+                            href="/store"
+                            onClick={() => setShowDropdown(false)}
+                            className="flex items-center justify-between px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                          >
+                            <div className="flex items-center space-x-3">
+                              <Store className="w-4 h-4 text-slate-500" />
+                              <span>Seller Dashboard</span>
+                            </div>
+                            {storeStatus === 'PENDING' && (
+                              <span className="px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200/50 rounded">
+                                Pending
+                              </span>
+                            )}
+                            {storeStatus === 'REJECTED' && (
+                              <span className="px-1.5 py-0.5 text-[8px] font-extrabold uppercase tracking-wider text-rose-600 bg-rose-50 border border-rose-200/50 rounded">
+                                Rejected
+                              </span>
+                            )}
+                          </Link>
+                        )}
+
+                        {userRole === 'BUYER' && (
+                          <Link
+                            href="/vendor/register"
+                            onClick={() => setShowDropdown(false)}
+                            className="flex items-center space-x-3 px-4 py-2.5 text-xs text-indigo-605 hover:bg-indigo-50/55 transition-colors font-bold"
+                          >
+                            <Store className="w-4 h-4 text-indigo-500" />
+                            <span>Become a Vendor</span>
+                          </Link>
+                        )}
 
                         <Link
                           href="/orders"
@@ -145,6 +220,7 @@ export default function Navbar() {
                           <Compass className="w-4 h-4 text-slate-500" />
                           <span>Manage Orders</span>
                         </Link>
+
 
                         <div className="border-t border-slate-100 my-1" />
 

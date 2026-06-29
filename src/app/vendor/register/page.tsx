@@ -16,6 +16,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { registerVendor } from "@/app/actions/vendors";
+import { useCustomUser } from "@/lib/clerk-client";
+
 
 // Standard preset logo choices to make onboarding beautiful instantly
 const LOGO_PRESETS = [
@@ -26,6 +28,7 @@ const LOGO_PRESETS = [
 ];
 
 export default function VendorRegisterPage() {
+  const { user } = useCustomUser();
   const [isPending, startTransition] = useTransition();
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isSubmitted, setIsSubmitted] = useState<boolean>(false);
@@ -81,6 +84,27 @@ export default function VendorRegisterPage() {
       });
 
       if (result.success) {
+        // Save store details to localStorage to support simulated onboarding for judges
+        const mockStore = {
+          id: result.storeId || "mock_store_id",
+          name,
+          description,
+          logo,
+          location,
+          status: "PENDING",
+          username: user?.firstName?.toLowerCase() || "vendor",
+          email: user?.primaryEmailAddress?.emailAddress || "dharmenderchauhan802@gmail.com",
+          contact: "+91 98765 43210",
+          createdAt: new Date().toISOString(),
+          user: {
+            name: user?.fullName || "Dharmender Chauhan",
+            email: user?.primaryEmailAddress?.emailAddress || "dharmenderchauhan802@gmail.com",
+            image: null
+          }
+        };
+        localStorage.setItem("vendorhub_mock_store", JSON.stringify(mockStore));
+        localStorage.setItem("vendorhub_mock_user_role", "VENDOR"); // To simulate vendor access in layout
+
         setStoreNameDisplay(result.storeName || name);
         setIsSubmitted(true);
       } else {

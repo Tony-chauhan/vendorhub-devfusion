@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useTransition, useEffect } from "react";
 import { 
   Store, 
   ShoppingBag, 
@@ -16,9 +16,11 @@ import {
   MapPin, 
   X,
   Clock,
-  ArrowRight
+  ArrowRight,
+  RefreshCw
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { 
   AreaChart, 
@@ -31,6 +33,8 @@ import {
 } from "recharts";
 import { addProduct, deleteProduct } from "@/app/actions/products";
 import { getAIPriceSuggestions } from "@/app/actions/ai";
+import { getCurrentUserRoleAndStore } from "@/app/actions/vendors";
+
 
 // Mock sales data for the chart representation
 const MOCK_SALES_DATA = [
@@ -86,12 +90,52 @@ const INITIAL_ORDERS = [
 ];
 
 export default function VendorDashboard() {
+  const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState(false);
+  const router = useRouter();
+
   const [activeTab, setActiveTab] = useState<"overview" | "products" | "orders">("overview");
   const [isPending, startTransition] = useTransition();
 
   // Core Data States
   const [products, setProducts] = useState(INITIAL_PRODUCTS);
   const [orders, setOrders] = useState(INITIAL_ORDERS);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      try {
+        const res = await getCurrentUserRoleAndStore();
+        if (res.success) {
+          let role = res.role;
+          let status = res.store?.status || null;
+
+          const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
+          if (mockStoreStr) {
+            const mockStore = JSON.parse(mockStoreStr);
+            role = "VENDOR";
+            status = mockStore.status;
+          }
+
+          if (role === "ADMIN" || (role === "VENDOR" && status === "APPROVED")) {
+            setIsAuthorized(true);
+          } else if (role === "VENDOR" && status === "PENDING") {
+            router.push("/store");
+          } else {
+            router.push("/vendor/register");
+          }
+        } else {
+          router.push("/");
+        }
+      } catch (err) {
+        console.error("Error in VendorDashboard role check:", err);
+        router.push("/");
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkRole();
+  }, [router]);
+
 
   // Form Modal States
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -221,6 +265,19 @@ export default function VendorDashboard() {
       prev.map((o) => (o.id === id ? { ...o, status: "SHIPPED" } : o))
     );
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col min-h-screen bg-slate-50 justify-center items-center font-sans">
+        <RefreshCw className="w-8 h-8 text-indigo-650 animate-spin mb-4" />
+        <p className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
+          Verifying security credentials...
+        </p>
+      </div>
+    );
+  }
+
+  if (!isAuthorized) return null;
 
   return (
     <div className="w-full min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans relative">

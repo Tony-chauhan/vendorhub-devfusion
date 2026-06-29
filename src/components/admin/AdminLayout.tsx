@@ -5,18 +5,36 @@ import Link from 'next/link';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import AdminNavbar from './AdminNavbar';
 import AdminSidebar from './AdminSidebar';
+import { getCurrentUserRoleAndStore } from '@/app/actions/vendors';
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching admin credentials
-    setTimeout(() => {
-      setIsAdmin(true);
-      setLoading(false);
-    }, 600);
+    const fetchAdminStatus = async () => {
+      try {
+        const res = await getCurrentUserRoleAndStore();
+        if (res.success && res.role === 'ADMIN') {
+          setIsAdmin(true);
+        } else {
+          // Fallback check for local simulated admin role
+          const mockUserRole = localStorage.getItem("vendorhub_mock_user_role");
+          if (mockUserRole === 'ADMIN') {
+            setIsAdmin(true);
+          } else {
+            setIsAdmin(false);
+          }
+        }
+      } catch (e) {
+        setIsAdmin(false);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAdminStatus();
   }, []);
+
 
   return loading ? (
     <div className="flex flex-col min-h-screen bg-slate-50 justify-center items-center">

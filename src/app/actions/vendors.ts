@@ -84,3 +84,62 @@ export async function registerVendor(data: RegisterVendorInput) {
     return { success: false, error: error.message || "Failed to submit vendor application" };
   }
 }
+
+export async function getCurrentUserRoleAndStore() {
+  try {
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return { success: false, error: "Not authenticated", role: "BUYER" as const, store: null };
+    }
+
+    const dbUrl = process.env.DATABASE_URL;
+    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+
+    if (isMockDb) {
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress || "";
+      const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
+      const isAdmin = email === "dharmenderchauhan802@gmail.com";
+      return {
+        success: true,
+        role: (isAdmin ? "ADMIN" : "BUYER") as "BUYER" | "VENDOR" | "ADMIN",
+        email,
+        name,
+        store: null,
+      };
+    }
+
+    let user = await prisma.user.findUnique({
+      where: { clerkId: clerkUser.id },
+      include: { store: true },
+    });
+
+    if (!user) {
+      // Sync user profile if not in DB yet
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress || "";
+      const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
+      const role = email === "dharmenderchauhan802@gmail.com" ? "ADMIN" : "BUYER";
+
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          name,
+          role,
+        },
+        include: { store: true },
+      });
+    }
+
+    return {
+      success: true,
+      role: user.role as "BUYER" | "VENDOR" | "ADMIN",
+      email: user.email,
+      name: user.name,
+      store: user.store,
+    };
+  } catch (error: any) {
+    console.error("Error in getCurrentUserRoleAndStore:", error);
+    return { success: false, error: error.message || "Failed to fetch user role", role: "BUYER" as const, store: null };
+  }
+}
+
