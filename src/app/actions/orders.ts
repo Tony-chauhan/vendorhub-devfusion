@@ -3,6 +3,9 @@
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
 import { inngest } from "@/lib/inngest/client";
+import { isMockDb } from "@/lib/env";
+import { createOrderSchema, formatZodError } from "@/lib/validations";
+import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 
 interface OrderItemInput {
   productId: string;
@@ -18,24 +21,34 @@ interface CreateOrderInput {
 
 export async function createOrder(data: CreateOrderInput) {
   try {
+    // Validate with Zod
+    const parsed = createOrderSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: formatZodError(parsed.error) };
+    }
+
     // 1. Authenticate with Clerk
     const clerkUser = await currentUser();
     if (!clerkUser) {
       return { success: false, error: "Authentication required to checkout" };
     }
 
-    // Failsafe Database Check: Simulate checkout if database credentials are mock
-    const dbUrl = process.env.DATABASE_URL;
-    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+    // Rate limit
+    const rl = checkRateLimit(`order:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false, error: "Too many requests. Please try again shortly." };
+    }
 
-    if (isMockDb) {
+    const validData = parsed.data;
+
+    if (isMockDb()) {
       console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating checkout order insertion.");
       const orderNumber = `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
       return {
         success: true,
         orderId: `mock_order_${Math.floor(100000 + Math.random() * 900000)}`,
         orderNumber,
-        netAmount: parseFloat((data.totalAmount * 0.9).toFixed(2))
+        netAmount: parseFloat((validData.totalAmount * 0.9).toFixed(2))
       };
     }
 
@@ -50,18 +63,18 @@ export async function createOrder(data: CreateOrderInput) {
 
     // 3. Formulate order number and calculate net amount after platform commission deduction
     const orderNumber = `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
-    const netAmount = parseFloat((data.totalAmount * 0.9).toFixed(2)); // Default 10% platform commission
+    const netAmount = parseFloat((validData.totalAmount * 0.9).toFixed(2)); // Default 10% platform commission
 
     // 4. Insert order and orderItems within a transaction
     const order = await prisma.order.create({
       data: {
         orderNumber,
-        totalAmount: data.totalAmount,
+        totalAmount: validData.totalAmount,
         netAmount,
-        address: data.address,
+        address: validData.address,
         buyerId: user.id,
         orderItems: {
-          create: data.items.map((item) => ({
+          create: validData.items.map((item) => ({
             quantity: item.quantity,
             price: item.price,
             productId: item.productId,
@@ -74,7 +87,7 @@ export async function createOrder(data: CreateOrderInput) {
     });
 
     // 5. Decrement stock levels in the database for each item purchased
-    for (const item of data.items) {
+    for (const item of validData.items) {
       await prisma.product.update({
         where: { id: item.productId },
         data: {

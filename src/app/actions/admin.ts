@@ -2,9 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
-
-const dbUrl = process.env.DATABASE_URL;
-const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+import { isMockDb, ADMIN_EMAIL } from "@/lib/env";
+import { storeStatusSchema, processRefundSchema, formatZodError } from "@/lib/validations";
+import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 
 // 1. Helper to assert that the caller is the platform administrator
 export async function checkAdmin() {
@@ -12,9 +12,9 @@ export async function checkAdmin() {
     const clerkUser = await currentUser();
     if (!clerkUser) return false;
 
-    if (isMockDb) {
+    if (isMockDb()) {
       const email = clerkUser.emailAddresses?.[0]?.emailAddress;
-      return email === "dharmenderchauhan802@gmail.com";
+      return email === ADMIN_EMAIL;
     }
 
     const user = await prisma.user.findUnique({
@@ -25,7 +25,7 @@ export async function checkAdmin() {
     if (user?.role === "ADMIN") return true;
 
     const email = clerkUser.emailAddresses?.[0]?.emailAddress;
-    return email === "dharmenderchauhan802@gmail.com";
+    return email === ADMIN_EMAIL;
   } catch {
     return false;
   }
@@ -38,7 +38,7 @@ export async function getPendingStores() {
     return { success: false, error: "Unauthorized access to admin portal" };
   }
 
-  if (isMockDb) {
+  if (isMockDb()) {
     return { success: true, stores: [] };
   }
 
@@ -58,19 +58,25 @@ export async function getPendingStores() {
 
 // 3. Approve or Reject a vendor store registration
 export async function updateStoreStatus(storeId: string, status: "APPROVED" | "REJECTED") {
+  // Validate inputs
+  const parsed = storeStatusSchema.safeParse({ storeId, status });
+  if (!parsed.success) {
+    return { success: false, error: formatZodError(parsed.error) };
+  }
+
   const isAdmin = await checkAdmin();
   if (!isAdmin) {
     return { success: false, error: "Unauthorized" };
   }
 
-  if (isMockDb) {
+  if (isMockDb()) {
     return { success: true };
   }
 
   try {
     const store = await prisma.store.update({
-      where: { id: storeId },
-      data: { status },
+      where: { id: parsed.data.storeId },
+      data: { status: parsed.data.status },
     });
     return { success: true, store };
   } catch (error: any) {
@@ -85,7 +91,7 @@ export async function getAdminAnalytics() {
     return { success: false, error: "Unauthorized" };
   }
 
-  if (isMockDb) {
+  if (isMockDb()) {
     return {
       success: true,
       analytics: {
@@ -146,7 +152,7 @@ export async function getRefundRequests() {
     return { success: false, error: "Unauthorized" };
   }
 
-  if (isMockDb) {
+  if (isMockDb()) {
     return { success: true, refunds: [] };
   }
 
@@ -169,19 +175,25 @@ export async function getRefundRequests() {
 
 // 6. Process (Approve/Reject) refund request ticket
 export async function processRefund(refundId: string, status: "APPROVED" | "REJECTED") {
+  // Validate inputs
+  const parsed = processRefundSchema.safeParse({ refundId, status });
+  if (!parsed.success) {
+    return { success: false, error: formatZodError(parsed.error) };
+  }
+
   const isAdmin = await checkAdmin();
   if (!isAdmin) {
     return { success: false, error: "Unauthorized" };
   }
 
-  if (isMockDb) {
+  if (isMockDb()) {
     return { success: true };
   }
 
   try {
     const refund = await prisma.refund.update({
-      where: { id: refundId },
-      data: { status },
+      where: { id: parsed.data.refundId },
+      data: { status: parsed.data.status },
     });
     return { success: true, refund };
   } catch (error: any) {

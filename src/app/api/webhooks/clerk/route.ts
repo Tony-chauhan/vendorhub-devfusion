@@ -2,6 +2,7 @@ import { Webhook } from "svix";
 import { headers } from "next/headers";
 import { NextResponse } from "next/server";
 import { inngest } from "@/lib/inngest/client";
+import { checkRateLimit, WEBHOOK_RATE_LIMIT } from "@/lib/rate-limit";
 
 type ClerkWebhookEvent = {
   type: string;
@@ -22,7 +23,18 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Webhook secret not configured" }, { status: 500 });
   }
 
+  // Rate limit by IP
   const headerPayload = await headers();
+  const clientIp = headerPayload.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+
+  const rl = checkRateLimit(`webhook:${clientIp}`, WEBHOOK_RATE_LIMIT);
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: "Rate limit exceeded" },
+      { status: 429, headers: { "Retry-After": String(Math.ceil(rl.retryAfterMs / 1000)) } }
+    );
+  }
+
   const svixId = headerPayload.get("svix-id");
   const svixTimestamp = headerPayload.get("svix-timestamp");
   const svixSignature = headerPayload.get("svix-signature");

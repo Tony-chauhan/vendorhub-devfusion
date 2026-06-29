@@ -2,6 +2,9 @@
 
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
+import { isMockDb, ADMIN_EMAIL, resolveRole } from "@/lib/env";
+import { registerVendorSchema, formatZodError } from "@/lib/validations";
+import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 
 interface RegisterVendorInput {
   name: string;
@@ -12,22 +15,33 @@ interface RegisterVendorInput {
 
 export async function registerVendor(data: RegisterVendorInput) {
   try {
+    // Validate with Zod
+    const parsed = registerVendorSchema.safeParse(data);
+    if (!parsed.success) {
+      return { success: false, error: formatZodError(parsed.error) };
+    }
+
     // 1. Authenticate with Clerk
     const clerkUser = await currentUser();
     if (!clerkUser) {
       return { success: false, error: "Authentication required to apply as a vendor" };
     }
 
-    const dbUrl = process.env.DATABASE_URL;
-    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+    // Rate limit
+    const rl = checkRateLimit(`vendor-reg:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false, error: "Too many requests. Please try again shortly." };
+    }
 
-    if (isMockDb) {
+    const validData = parsed.data;
+
+    if (isMockDb()) {
       console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating store registration.");
       return { 
         success: true, 
         storeId: `mock_store_${Math.floor(100000 + Math.random() * 900000)}`, 
         status: "APPROVED",
-        storeName: data.name 
+        storeName: validData.name 
       };
     }
 
@@ -55,10 +69,10 @@ export async function registerVendor(data: RegisterVendorInput) {
     // 3. Create Store in PENDING status
     const store = await prisma.store.create({
       data: {
-        name: data.name,
-        description: data.description,
-        logo: data.logo || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80",
-        location: data.location,
+        name: validData.name,
+        description: validData.description,
+        logo: validData.logo || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80",
+        location: validData.location,
         status: "PENDING", // Always PENDING initially, requires ADMIN approval
         vendorId: user.id,
       },
@@ -92,16 +106,18 @@ export async function getCurrentUserRoleAndStore() {
       return { success: false, error: "Not authenticated", role: "BUYER" as const, store: null };
     }
 
-    const dbUrl = process.env.DATABASE_URL;
-    const isMockDb = !dbUrl || dbUrl.includes("mock") || dbUrl.includes("mockpassword") || dbUrl.includes("ep-mock-host");
+    // Rate limit
+    const rl = checkRateLimit(`role-check:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false, error: "Too many requests", role: "BUYER" as const, store: null };
+    }
 
-    if (isMockDb) {
+    if (isMockDb()) {
       const email = clerkUser.emailAddresses?.[0]?.emailAddress || "";
       const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
-      const isAdmin = email === "dharmenderchauhan802@gmail.com";
       return {
         success: true,
-        role: (isAdmin ? "ADMIN" : "BUYER") as "BUYER" | "VENDOR" | "ADMIN",
+        role: resolveRole(email) as "BUYER" | "VENDOR" | "ADMIN",
         email,
         name,
         store: null,
@@ -117,7 +133,7 @@ export async function getCurrentUserRoleAndStore() {
       // Sync user profile if not in DB yet
       const email = clerkUser.emailAddresses?.[0]?.emailAddress || "";
       const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
-      const role = email === "dharmenderchauhan802@gmail.com" ? "ADMIN" : "BUYER";
+      const role = resolveRole(email);
 
       user = await prisma.user.create({
         data: {
@@ -142,4 +158,3 @@ export async function getCurrentUserRoleAndStore() {
     return { success: false, error: error.message || "Failed to fetch user role", role: "BUYER" as const, store: null };
   }
 }
-

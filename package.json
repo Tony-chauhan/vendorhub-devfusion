@@ -29,7 +29,8 @@
     "react-hot-toast": "^2.5.2",
     "react-redux": "^9.2.0",
     "recharts": "^3.8.1",
-    "svix": "^1.66.0"
+    "svix": "^1.66.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

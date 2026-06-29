@@ -1,5 +1,6 @@
 import { inngest } from "./client";
 import { prisma } from "../prisma";
+import { resolveRole } from "../env";
 
 // 1. Sync User Creation from Clerk Webhook
 export const clerkUserCreated = inngest.createFunction(
@@ -15,9 +16,8 @@ export const clerkUserCreated = inngest.createFunction(
 
     if (!email) return { status: "ignored", reason: "No email address found" };
 
-    // Auto-promote the team leader's email to ADMIN role to ease setup/judging.
-    // VENDOR role is granted only after store registration via registerVendor().
-    const role = email === "dharmenderchauhan802@gmail.com" ? "ADMIN" : "BUYER";
+    // Auto-promote admin emails. VENDOR role is granted only after store registration.
+    const role = resolveRole(email);
 
     const user = await step.run("create-user-in-db", async () => {
       return await prisma.user.upsert({

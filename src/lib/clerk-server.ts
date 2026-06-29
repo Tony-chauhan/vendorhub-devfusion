@@ -1,15 +1,8 @@
 import * as ClerkServer from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { isMockAuth, ADMIN_EMAIL } from "./env";
 
-const clerkSecretKey = process.env.CLERK_SECRET_KEY;
-const clerkPubKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
-
-export const IS_MOCK_AUTH = 
-  !clerkSecretKey || 
-  clerkSecretKey.includes("mock") || 
-  !clerkPubKey || 
-  clerkPubKey.includes("mock") || 
-  clerkPubKey.startsWith("pk_test_dGVhbXhkZXNpZ24");
+export const IS_MOCK_AUTH = isMockAuth();
 
 /**
  * 👤 Safe currentUser server helper
