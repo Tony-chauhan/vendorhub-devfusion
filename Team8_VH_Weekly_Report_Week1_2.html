@@ -1,0 +1,233 @@
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head>
+<meta charset="UTF-8">
+<meta name="ProgId" content="Word.Document">
+<meta name="Generator" content="Microsoft Word 15">
+<meta name="Originator" content="Microsoft Word 15">
+<style>
+  body { font-family: Calibri, sans-serif; font-size: 11pt; color: #222; margin: 40px 60px; line-height: 1.5; }
+  h1 { font-size: 18pt; color: #1a1a2e; text-align: center; margin-bottom: 4px; }
+  h2 { font-size: 14pt; color: #16213e; border-bottom: 2px solid #4361ee; padding-bottom: 4px; margin-top: 24px; }
+  h3 { font-size: 12pt; color: #3a0ca3; margin-top: 16px; }
+  h4 { font-size: 11pt; color: #555; margin-top: 12px; }
+  table { border-collapse: collapse; width: 100%; margin: 10px 0 16px 0; }
+  th { background-color: #4361ee; color: white; padding: 8px 12px; text-align: left; font-size: 10pt; }
+  td { border: 1px solid #ddd; padding: 6px 12px; font-size: 10pt; vertical-align: top; }
+  tr:nth-child(even) { background-color: #f8f9fa; }
+  .meta { text-align: center; font-size: 10pt; color: #666; margin: 2px 0; }
+  .badge-done { color: #0a8754; font-weight: bold; }
+  .badge-progress { color: #e67e22; font-weight: bold; }
+  .badge-planned { color: #3498db; font-weight: bold; }
+  .section-note { background: #f0f4ff; border-left: 4px solid #4361ee; padding: 10px 14px; margin: 12px 0; font-size: 10pt; }
+  .signature { margin-top: 30px; border-top: 1px solid #ccc; padding-top: 12px; font-size: 10pt; color: #444; }
+  ol, ul { font-size: 10.5pt; }
+  li { margin-bottom: 4px; }
+</style>
+</head>
+<body>
+
+<h1>WEEKLY PROJECT PROGRESS REPORT</h1>
+
+<p class="meta"><strong>Team Name:</strong> Team 8 &ndash; VH (VendorHub)</p>
+<p class="meta"><strong>Project:</strong> VendorHub &mdash; Hyperlocal Multi-Vendor E-Commerce Platform</p>
+<p class="meta"><strong>Reporting Period:</strong> Week 1&ndash;2 | Phase 1: Core Stability &amp; Security</p>
+<p class="meta"><strong>Report Date:</strong> 29 June 2026</p>
+<p class="meta"><strong>Deadline:</strong> 5:00 PM, 29 June 2026</p>
+
+<br>
+
+<div class="section-note">
+Dear Team,<br>
+Please find below the weekly progress report for Team 8 &ndash; VH covering Weeks 1&ndash;2 of the Enginow internship, aligned with the official project roadmap (Phase 1: Core Stability &amp; Security).
+</div>
+
+<h2>Team Members</h2>
+<table>
+  <tr><th>Name</th><th>Role</th><th>Responsibilities</th></tr>
+  <tr><td><strong>Dharmender Chauhan</strong></td><td>Tech Stack &amp; Backend Developer</td><td>Architecture, Server Actions, API Routes, Database, Inngest Workers, Clerk Auth Backend, Middleware</td></tr>
+  <tr><td><strong>Rishita Sorout</strong></td><td>UI/UX Specialist &amp; Frontend Developer</td><td>Sign-In/Sign-Up UI, Profile Page, Navbar Enhancements, Role-Based UI, Store Layout, Admin Approval UI</td></tr>
+</table>
+
+<h2>Phase 1 Roadmap (Weeks 1&ndash;2): Core Stability &amp; Security</h2>
+<p>As per the official Enginow project roadmap, Phase 1 targets the following:</p>
+<table>
+  <tr><th>#</th><th>Phase 1 Task</th><th>Status</th><th>Details</th></tr>
+  <tr><td>1</td><td>Role-Based Access Control</td><td class="badge-done">&#10003; Completed</td><td>Full RBAC with BUYER/VENDOR/ADMIN roles, middleware protection, database-backed authorization</td></tr>
+  <tr><td>2</td><td>Input Validation</td><td class="badge-progress">&#128260; In Progress</td><td>Form-level validation in sign-up, profile, vendor registration; server-side validation in all server actions</td></tr>
+  <tr><td>3</td><td>Rate Limiting</td><td class="badge-planned">&#128203; Planned</td><td>To be implemented for API routes and server actions in remaining Phase 1 window</td></tr>
+  <tr><td>4</td><td>Removal of Mock Production Risks</td><td class="badge-progress">&#128260; In Progress</td><td>Production code paths added alongside mock fallbacks; mock mode preserved for demo but clearly separated</td></tr>
+  <tr><td>5</td><td>Cart Persistence Planning</td><td class="badge-planned">&#128203; Planned</td><td>Architecture design completed; Redux-based cart currently client-side only, database persistence to be added</td></tr>
+</table>
+
+<h2>Work Completed During Week 1&ndash;2</h2>
+
+<h3>A. Role-Based Access Control (&#10003; Completed)</h3>
+
+<h4>Backend (Dharmender Chauhan)</h4>
+<ol>
+  <li><strong>User Server Actions</strong> (<code>src/app/actions/users.ts</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li><code>getCurrentUserProfile()</code> &mdash; Fetches authenticated user from Neon PostgreSQL via Prisma with store relation; auto-creates user on first login.</li>
+      <li><code>updateUserProfile()</code> &mdash; Name update with input validation (empty/whitespace rejection).</li>
+      <li><code>completeRegistration()</code> &mdash; Post-sign-up flow with role-based redirect (VENDOR &rarr; <code>/vendor/register</code>, BUYER &rarr; <code>/</code>).</li>
+      <li><code>checkVendorAccess()</code> &mdash; Verifies VENDOR role + active store for dashboard access.</li>
+    </ul>
+  </li>
+  <li><strong>Vendor Server Actions</strong> (<code>src/app/actions/vendors.ts</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li><code>registerVendor()</code> &mdash; Store registration with PENDING status, duplicate-store check, role promotion to VENDOR.</li>
+      <li><code>getCurrentUserRoleAndStore()</code> &mdash; Role + store retrieval with auto-sync for new Clerk users.</li>
+    </ul>
+  </li>
+  <li><strong>Clerk Middleware</strong> (<code>src/middleware.ts</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li>Route protection via <code>createRouteMatcher</code> for: <code>/admin</code>, <code>/vendor</code>, <code>/cart</code>, <code>/checkout</code>, <code>/profile</code>.</li>
+      <li>Mock-mode bypass for zero-config evaluation.</li>
+    </ul>
+  </li>
+  <li><strong>Admin Auth Enhancement</strong> (<code>src/app/actions/admin.ts</code>) &mdash; <em>MODIFIED</em>
+    <ul>
+      <li><code>checkAdmin()</code> now queries database <code>role</code> field instead of email-only matching &mdash; production-grade authorization.</li>
+    </ul>
+  </li>
+</ol>
+
+<h4>Frontend (Rishita Sorout)</h4>
+<ol start="5">
+  <li><strong>Sign-Up Page</strong> (<code>src/app/sign-up/page.tsx</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li>2-step flow: Role selection (Buyer/Vendor) &rarr; Clerk SignUp component.</li>
+      <li>Glassmorphic card design with icon indicators and role descriptions.</li>
+    </ul>
+  </li>
+  <li><strong>Sign-In Page</strong> (<code>src/app/sign-in/[[...sign-in]]/page.tsx</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li>Clerk SignIn with catch-all routing; mock-mode informational panel.</li>
+    </ul>
+  </li>
+  <li><strong>Profile Page</strong> (<code>src/app/profile/page.tsx</code>, <code>src/components/profile/ProfileForm.tsx</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li>Gradient header with avatar, email, and role badge (color-coded per role).</li>
+      <li>Editable name, read-only email, member-since date.</li>
+      <li>Role-specific action cards (Buyer &rarr; "Become a Vendor", Vendor &rarr; Store dashboard, Admin &rarr; Console).</li>
+    </ul>
+  </li>
+  <li><strong>Navbar Enhancement</strong> (<code>src/components/Navbar.tsx</code>) &mdash; <em>MODIFIED</em>
+    <ul>
+      <li>Added: Profile link, Sign Up button, role-aware dropdown menu items.</li>
+    </ul>
+  </li>
+  <li><strong>Store Layout Enhancement</strong> (<code>src/components/store/StoreLayout.tsx</code>) &mdash; <em>MODIFIED</em>
+    <ul>
+      <li>PENDING state: Glassmorphic "Under Review" card with admin shortcut hint.</li>
+      <li>REJECTED state: Error card with clear messaging.</li>
+    </ul>
+  </li>
+  <li><strong>Admin Approval Enhancement</strong> (<code>src/app/admin/approve/page.tsx</code>) &mdash; <em>MODIFIED</em>
+    <ul>
+      <li>3-tier store loading: Database &rarr; localStorage mock &rarr; dummy data fallback.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>B. Input Validation (&#128260; In Progress)</h3>
+<table>
+  <tr><th>Area</th><th>Validation Implemented</th><th>Owner</th></tr>
+  <tr><td>Sign-Up form</td><td>Role selection required before proceed</td><td>Rishita</td></tr>
+  <tr><td>Profile form</td><td>Empty name rejection, trimming</td><td>Dharmender</td></tr>
+  <tr><td>Vendor registration</td><td>Store name &amp; description required (Step 1), location required (Step 2), bank details required (Step 3)</td><td>Rishita</td></tr>
+  <tr><td>Server actions</td><td>Null/empty checks, auth-required guards on all endpoints</td><td>Dharmender</td></tr>
+  <tr><td><strong>Remaining</strong></td><td>Comprehensive Zod schema validation, email format checks, XSS sanitization</td><td>Week 3</td></tr>
+</table>
+
+<h3>C. Removal of Mock Production Risks (&#128260; In Progress)</h3>
+<table>
+  <tr><th>Mock Component</th><th>Current Status</th><th>Plan</th></tr>
+  <tr><td>Clerk Auth</td><td>Production code paths added; mock fallback retained for demo</td><td>Conditional isolation complete</td></tr>
+  <tr><td>Database (Neon)</td><td><code>isMockDb()</code> checker separates real vs mock in all server actions</td><td>Environment-based toggle ready</td></tr>
+  <tr><td>Webhook verification</td><td><code>svix</code> signature verification added for production Clerk webhooks</td><td>Production-ready</td></tr>
+  <tr><td>Payment sandbox</td><td>Stripe/Razorpay sandbox still in mock mode</td><td>Phase 2 live integration</td></tr>
+  <tr><td><strong>Remaining</strong></td><td>Remove hardcoded admin email, add environment-variable-based admin config</td><td>Week 3</td></tr>
+</table>
+
+<h3>D. Webhook &amp; Background Workers</h3>
+<ol>
+  <li><strong>Clerk Webhook Route</strong> (<code>src/app/api/webhooks/clerk/route.ts</code>) &mdash; <em>NEW</em>
+    <ul>
+      <li>Production-grade endpoint with <code>svix</code> signature verification.</li>
+      <li>Handles: <code>user.created</code>, <code>user.updated</code>, <code>user.deleted</code> &rarr; Inngest dispatch.</li>
+    </ul>
+  </li>
+  <li><strong>Inngest Functions Enhancement</strong> (<code>src/lib/inngest/functions.ts</code>) &mdash; <em>MODIFIED</em>
+    <ul>
+      <li><code>clerkUserCreated</code> now accepts <code>public_metadata.registrationIntent</code> for role-aware user sync.</li>
+    </ul>
+  </li>
+</ol>
+
+<h3>E. Dependency Updates</h3>
+<table>
+  <tr><th>Package</th><th>Action</th><th>Purpose</th></tr>
+  <tr><td><code>svix</code></td><td class="badge-done">&#10003; Added</td><td>Clerk webhook signature verification (production security)</td></tr>
+</table>
+
+<h2>Key Achievements</h2>
+<ol>
+  <li>&#10003; <strong>Complete RBAC System</strong> &mdash; Database-backed role system (BUYER/VENDOR/ADMIN) with middleware route protection and role-aware UI.</li>
+  <li>&#10003; <strong>Production Auth Flow</strong> &mdash; Full sign-in, sign-up, and profile management with Clerk integration.</li>
+  <li>&#10003; <strong>Webhook Security</strong> &mdash; <code>svix</code>-verified Clerk webhook endpoint dispatching to Inngest workers.</li>
+  <li>&#10003; <strong>Vendor Onboarding Pipeline</strong> &mdash; Registration &rarr; Admin approval &rarr; Dashboard unlock workflow.</li>
+  <li>&#10003; <strong>Mock/Production Separation</strong> &mdash; Clear conditional branching isolating mock mode from production code paths.</li>
+  <li>&#10003; <strong>Code Sync</strong> &mdash; Pulled and merged 11 commits (1,354 additions across 20 files) from remote.</li>
+</ol>
+
+<h2>Challenges Faced</h2>
+<ol>
+  <li><strong><code>proxy.ts</code> vs <code>middleware.ts</code> Conflict</strong> &mdash; Next.js 16 renamed middleware to <code>proxy.ts</code>, but Clerk requires <code>middleware.ts</code>. Both files currently coexist; needs reconciliation.</li>
+  <li><strong>Mock Mode Complexity</strong> &mdash; Ensuring all 20 modified files gracefully degrade without real API keys required extensive conditional logic.</li>
+  <li><strong>Clerk API Surface</strong> &mdash; Had to build custom <code>customClerkMiddleware</code> wrapper to support both mock and real Clerk middleware.</li>
+</ol>
+
+<h2>Progress Status</h2>
+<table>
+  <tr><th>Phase 1 Task</th><th>Status</th><th>Owner</th></tr>
+  <tr><td>Role-based access (RBAC)</td><td class="badge-done">&#10003; Completed</td><td>Dharmender + Rishita</td></tr>
+  <tr><td>Auth pages (Sign-in/Sign-up)</td><td class="badge-done">&#10003; Completed</td><td>Rishita</td></tr>
+  <tr><td>Profile management</td><td class="badge-done">&#10003; Completed</td><td>Rishita (UI) + Dharmender (Backend)</td></tr>
+  <tr><td>Clerk webhook + Inngest sync</td><td class="badge-done">&#10003; Completed</td><td>Dharmender</td></tr>
+  <tr><td>Middleware route protection</td><td class="badge-done">&#10003; Completed</td><td>Dharmender</td></tr>
+  <tr><td>Role-aware Navbar &amp; UI</td><td class="badge-done">&#10003; Completed</td><td>Rishita</td></tr>
+  <tr><td>Vendor onboarding pipeline</td><td class="badge-done">&#10003; Completed</td><td>Rishita + Dharmender</td></tr>
+  <tr><td>Admin approval enhancement</td><td class="badge-done">&#10003; Completed</td><td>Rishita</td></tr>
+  <tr><td>Input validation (basic)</td><td class="badge-progress">&#128260; In Progress</td><td>Dharmender + Rishita</td></tr>
+  <tr><td>Rate limiting</td><td class="badge-planned">&#128203; Planned</td><td>Dharmender</td></tr>
+  <tr><td>Mock production risk removal</td><td class="badge-progress">&#128260; In Progress</td><td>Dharmender</td></tr>
+  <tr><td>Cart persistence planning</td><td class="badge-planned">&#128203; Planned</td><td>Dharmender</td></tr>
+</table>
+
+<p><strong>Overall Phase 1 Progress: ~75% Complete</strong> (core security tasks done, validation/rate-limiting/cart persistence carry forward)</p>
+
+<h2>Upcoming Week Tasks &mdash; Phase 2 (Weeks 3&ndash;4): Marketplace Completion</h2>
+<p>As per the official Enginow roadmap:</p>
+<table>
+  <tr><th>#</th><th>Task</th><th>Owner</th><th>Priority</th></tr>
+  <tr><td>1</td><td>Live payment setup (Stripe/Razorpay production keys)</td><td>Dharmender</td><td>High</td></tr>
+  <tr><td>2</td><td>Vendor order updates (status management flow)</td><td>Dharmender + Rishita</td><td>High</td></tr>
+  <tr><td>3</td><td>Product edit/update flow (CRUD for vendor products)</td><td>Rishita (UI) + Dharmender (Backend)</td><td>High</td></tr>
+  <tr><td>4</td><td>Wishlist completion (database persistence)</td><td>Dharmender</td><td>Medium</td></tr>
+  <tr><td>5</td><td>Review system completion (verified purchase reviews)</td><td>Dharmender + Rishita</td><td>Medium</td></tr>
+  <tr><td>6</td><td><em>Carry-forward:</em> Input validation (Zod schemas)</td><td>Dharmender</td><td>Medium</td></tr>
+  <tr><td>7</td><td><em>Carry-forward:</em> Rate limiting for API routes</td><td>Dharmender</td><td>Medium</td></tr>
+  <tr><td>8</td><td><em>Carry-forward:</em> Cart persistence (Redux &rarr; DB sync)</td><td>Dharmender</td><td>Medium</td></tr>
+</table>
+
+<br>
+
+<div class="signature">
+<strong>Submitted by:</strong> Team 8 &ndash; VH<br>
+<strong>Dharmender Chauhan</strong> (Tech Stack &amp; Backend) | <strong>Rishita Sorout</strong> (UI/UX &amp; Frontend)<br>
+<strong>Organization:</strong> Enginow
+</div>
+
+</body>
+</html>
