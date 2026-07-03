@@ -7,23 +7,15 @@ import { PlusCircle, Upload, Sparkles, AlertCircle, RefreshCw, CheckCircle2 } fr
 import toast from 'react-hot-toast';
 import { assets } from '@/assets/assets';
 import { getAIPriceSuggestions } from '@/app/actions/ai';
+import { addProduct } from '@/app/actions/products';
+import { categories } from '@/assets/assets';
+
+const DEFAULT_IMAGE =
+  'https://images.unsplash.com/photo-1542838132-92c53300491e?w=600&auto=format&fit=crop&q=80';
 
 export default function StoreAddProduct() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
-
-  const categories = [
-    'Headphones',
-    'Speakers',
-    'Watch',
-    'Earbuds',
-    'Mouse',
-    'Decoration',
-    'Electronics',
-    'Clothing',
-    'Home & Kitchen',
-    'Others',
-  ];
 
   const [images, setImages] = useState<Record<number, File | null>>({
     1: null,
@@ -96,19 +88,26 @@ export default function StoreAddProduct() {
       return;
     }
 
-    const addPromise = new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 1500);
-    });
+    startTransition(async () => {
+      const imageUrls = Object.values(images)
+        .filter((file): file is File => file !== null)
+        .map(() => DEFAULT_IMAGE);
 
-    toast.promise(addPromise, {
-      loading: 'Pushing product to hyperlocal inventory catalog...',
-      success: () => {
+      const result = await addProduct({
+        name: productInfo.name.trim(),
+        description: productInfo.description.trim() || productInfo.name.trim(),
+        price: parseFloat(productInfo.price),
+        stock: 10,
+        category: productInfo.category,
+        images: imageUrls.length > 0 ? imageUrls : [DEFAULT_IMAGE],
+      });
+
+      if (result.success) {
+        toast.success('Product added to inventory catalog');
         router.push('/store/manage-product');
-        return 'Product added successfully for moderation!';
-      },
-      error: 'Product insertion failed.',
+      } else {
+        toast.error(result.error ?? 'Product insertion failed.');
+      }
     });
   };
 
