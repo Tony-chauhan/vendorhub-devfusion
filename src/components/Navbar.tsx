@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Search, ShoppingCart, User, Store, LogOut, Compass, ShieldAlert } from 'lucide-react';
+import { Search, ShoppingCart, Store, LogOut, Compass, ShieldAlert, UserCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { useCustomUser, CustomSignInButton, CustomSignOutButton } from '@/lib/clerk-client';
+import { useCustomUser, CustomSignInButton, CustomSignOutButton, CustomSignUpButton } from '@/lib/clerk-client';
 import { getCurrentUserRoleAndStore } from '@/app/actions/vendors';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -34,7 +34,6 @@ export default function Navbar() {
           let role = res.role;
           let status = res.store?.status || null;
 
-          // Support client-side simulated localStorage store state for hackathon judges
           const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
           if (mockStoreStr) {
             const mockStore = JSON.parse(mockStoreStr);
@@ -53,7 +52,6 @@ export default function Navbar() {
     fetchRole();
   }, [isSignedIn]);
 
-
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     router.push(`/shop?search=${encodeURIComponent(search)}`);
@@ -63,7 +61,6 @@ export default function Navbar() {
     <nav className="sticky top-0 z-50 bg-white/75 backdrop-blur-md border-b border-slate-200/80 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Logo / Branding */}
           <div className="flex items-center">
             <Link href="/" className="relative flex items-center group">
               <span className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
@@ -76,7 +73,6 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Desktop Navigation Link Menu */}
           <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-slate-600">
             <Link href="/" className="hover:text-indigo-600 transition-colors">
               Home
@@ -92,9 +88,7 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Action Row */}
           <div className="flex items-center space-x-4">
-            {/* Search Bar */}
             <form onSubmit={handleSearch} className="hidden sm:flex items-center relative w-48 lg:w-64">
               <Search className="absolute left-3 w-4 h-4 text-slate-400" />
               <input
@@ -106,7 +100,6 @@ export default function Navbar() {
               />
             </form>
 
-            {/* Shopping Cart Icon with animated badge */}
             <Link href="/cart" className="relative p-2.5 hover:bg-slate-100 rounded-full transition-colors group">
               <ShoppingCart className="w-5 h-5 text-slate-700 group-hover:text-indigo-600 transition-colors" />
               <AnimatePresence>
@@ -123,7 +116,6 @@ export default function Navbar() {
               </AnimatePresence>
             </Link>
 
-            {/* Clerk User Panel / Account Options */}
             {isSignedIn ? (
               <div className="relative">
                 <button
@@ -141,7 +133,6 @@ export default function Navbar() {
                 <AnimatePresence>
                   {showDropdown && (
                     <>
-                      {/* Invisible backdrop to dismiss dropdown */}
                       <div className="fixed inset-0 z-10" onClick={() => setShowDropdown(false)} />
                       <motion.div
                         initial={{ opacity: 0, y: 10 }}
@@ -156,7 +147,15 @@ export default function Navbar() {
                           </p>
                         </div>
 
-                        {/* Role-specific Links */}
+                        <Link
+                          href="/profile"
+                          onClick={() => setShowDropdown(false)}
+                          className="flex items-center space-x-3 px-4 py-2.5 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                        >
+                          <UserCircle className="w-4 h-4 text-slate-500" />
+                          <span>My Profile</span>
+                        </Link>
+
                         {userRole === 'ADMIN' && (
                           <>
                             <Link
@@ -221,7 +220,6 @@ export default function Navbar() {
                           <span>Manage Orders</span>
                         </Link>
 
-
                         <div className="border-t border-slate-100 my-1" />
 
                         <CustomSignOutButton>
@@ -236,11 +234,18 @@ export default function Navbar() {
                 </AnimatePresence>
               </div>
             ) : (
-              <CustomSignInButton>
-                <button className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-full shadow-sm shadow-indigo-600/10 transition-all cursor-pointer">
-                  Sign In
-                </button>
-              </CustomSignInButton>
+              <div className="flex items-center space-x-2">
+                <CustomSignInButton>
+                  <button className="px-4 py-2 text-indigo-600 hover:bg-indigo-50 font-semibold text-xs rounded-full transition-all cursor-pointer">
+                    Sign In
+                  </button>
+                </CustomSignInButton>
+                <CustomSignUpButton>
+                  <button className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs rounded-full shadow-sm shadow-indigo-600/10 transition-all cursor-pointer">
+                    Sign Up
+                  </button>
+                </CustomSignUpButton>
+              </div>
             )}
           </div>
         </div>
