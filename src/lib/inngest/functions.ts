@@ -8,13 +8,15 @@ export const clerkUserCreated = inngest.createFunction(
     triggers: [{ event: "clerk/user.created" }]
   },
   async ({ event, step }) => {
-    const { id, email_addresses, first_name, last_name } = event.data;
+    const { id, email_addresses, first_name, last_name, public_metadata } = event.data;
     const email = email_addresses?.[0]?.email_address;
     const name = `${first_name || ""} ${last_name || ""}`.trim();
+    const registrationIntent = public_metadata?.registrationIntent as string | undefined;
 
     if (!email) return { status: "ignored", reason: "No email address found" };
 
-    // Auto-promote the team leader's email to ADMIN role to ease setup/judging
+    // Auto-promote the team leader's email to ADMIN role to ease setup/judging.
+    // VENDOR role is granted only after store registration via registerVendor().
     const role = email === "dharmenderchauhan802@gmail.com" ? "ADMIN" : "BUYER";
 
     const user = await step.run("create-user-in-db", async () => {
@@ -33,7 +35,12 @@ export const clerkUserCreated = inngest.createFunction(
       });
     });
 
-    return { status: "success", userId: user.id, role: user.role };
+    return {
+      status: "success",
+      userId: user.id,
+      role: user.role,
+      registrationIntent: registrationIntent ?? "BUYER",
+    };
   }
 );
 
