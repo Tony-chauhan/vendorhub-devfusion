@@ -100,5 +100,23 @@ export function CustomSignInButton({ children }: { children: React.ReactNode }) 
     );
   }
 
-  return <Clerk.SignInButton>{children}</Clerk.SignInButton>;
+  return <Clerk.SignInButton mode="modal">{children}</Clerk.SignInButton>;
+}
+
+/**
+ * ✨ Custom Sign Up Button
+ */
+export function CustomSignUpButton({ children }: { children: React.ReactNode }) {
+  if (IS_MOCK_AUTH) {
+    return (
+      <button
+        onClick={() => (window.location.href = "/sign-up")}
+        className="w-full h-full text-left"
+      >
+        {children}
+      </button>
+    );
+  }
+
+  return <Clerk.SignUpButton mode="modal">{children}</Clerk.SignUpButton>;
 }
