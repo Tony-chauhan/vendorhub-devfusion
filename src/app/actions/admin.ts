@@ -12,10 +12,21 @@ export async function checkAdmin() {
     const clerkUser = await currentUser();
     if (!clerkUser) return false;
 
+    if (isMockDb) {
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      return email === "dharmenderchauhan802@gmail.com";
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId: clerkUser.id },
+      select: { role: true, email: true },
+    });
+
+    if (user?.role === "ADMIN") return true;
+
     const email = clerkUser.emailAddresses?.[0]?.emailAddress;
-    // Auto-promote the team leader's email to ADMIN role
     return email === "dharmenderchauhan802@gmail.com";
-  } catch (error) {
+  } catch {
     return false;
   }
 }
