@@ -60,6 +60,22 @@ export const addProductSchema = z.object({
   images: z.array(z.string().url("Each image must be a valid URL")).default([]),
 });
 
+export const updateProductSchema = addProductSchema.partial().extend({
+  id: safeUuid,
+});
+
+export const searchProductsSchema = z.object({
+  search: z.string().trim().max(120).optional(),
+  category: z.string().trim().max(80).optional(),
+  minPrice: z.number().nonnegative().optional(),
+  maxPrice: z.number().positive().optional(),
+  minRating: z.number().min(0).max(5).optional(),
+  sort: z
+    .enum(["default", "low-to-high", "high-to-low", "best", "discount"])
+    .optional()
+    .default("default"),
+});
+
 // ─── Order ──────────────────────────────────────────────────────
 export const createOrderSchema = z.object({
   totalAmount: positiveFloat,
