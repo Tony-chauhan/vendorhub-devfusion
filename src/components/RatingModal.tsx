@@ -3,16 +3,15 @@
 import React, { useState } from 'react';
 import { Star, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useDispatch } from 'react-redux';
-import { addRating } from '@/lib/features/rating/ratingSlice';
+import { createReview } from '@/app/actions/reviews';
 
 interface RatingModalProps {
   productId: string;
   onClose: () => void;
+  onSuccess?: () => void;
 }
 
-export default function RatingModal({ productId, onClose }: RatingModalProps) {
-  const dispatch = useDispatch();
+export default function RatingModal({ productId, onClose, onSuccess }: RatingModalProps) {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,24 +29,11 @@ export default function RatingModal({ productId, onClose }: RatingModalProps) {
 
     setIsSubmitting(true);
 
-    const submissionPromise = new Promise((resolve) => {
-      setTimeout(() => {
-        // Dispatch to rating slice
-        dispatch(
-          addRating({
-            id: `rat_${Date.now()}`,
-            rating,
-            review,
-            productId,
-            createdAt: new Date().toString(),
-            user: {
-              name: 'Dharmender Chauhan',
-              image: '/assets/profile_pic1.jpg',
-            },
-          })
-        );
-        resolve(true);
-      }, 1000);
+    const submissionPromise = createReview({ productId, rating, comment: review }).then((result) => {
+      if (!result.success) {
+        throw new Error(result.error);
+      }
+      return result;
     });
 
     toast.promise(submissionPromise, {
@@ -55,9 +41,13 @@ export default function RatingModal({ productId, onClose }: RatingModalProps) {
       success: () => {
         setIsSubmitting(false);
         onClose();
+        onSuccess?.();
         return 'Review posted successfully!';
       },
-      error: 'Failed to post review. Try again.',
+      error: (err) => {
+        setIsSubmitting(false);
+        return err instanceof Error ? err.message : 'Failed to post review. Try again.';
+      },
     });
   };
 

@@ -2,38 +2,51 @@
 
 import React, { useEffect, useState, useTransition } from 'react';
 import Image from 'next/image';
-import { RefreshCw, ListOrdered, Calendar, ShieldCheck, CreditCard, Tag, Eye, X } from 'lucide-react';
+import { RefreshCw, ListOrdered, ShieldCheck, CreditCard, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { orderDummyData } from '@/assets/assets';
+import { getVendorOrders, updateOrderStatus } from '@/app/actions/orders';
+
+const STATUS_STEPS = ['PLACED', 'CONFIRMED', 'SHIPPED', 'DELIVERED'] as const;
 
 export default function StoreOrders() {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const [isPending, startTransition] = useTransition();
+  const [loading, setLoading] = useState(true);
 
   const [orders, setOrders] = useState<any[]>([]);
   const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const loadOrders = () => {
+    setLoading(true);
+    getVendorOrders().then((result) => {
+      if (result.success) {
+        setOrders(result.orders);
+      } else {
+        toast.error(result.error);
+      }
+      setLoading(false);
+    });
+  };
+
   useEffect(() => {
-    setOrders(orderDummyData);
+    loadOrders();
   }, []);
 
-  const updateOrderStatus = (orderId: string, nextStatus: string) => {
+  const handleUpdateStatus = (orderId: string, nextStatus: 'CONFIRMED' | 'SHIPPED' | 'DELIVERED') => {
     startTransition(async () => {
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 800));
+      const result = await updateOrderStatus(orderId, nextStatus);
 
+      if (!result.success) {
+        toast.error(result.error);
+        return;
+      }
+
+      toast.success(`Order status updated to ${nextStatus}`);
       setOrders((prev) =>
-        prev.map((o) => {
-          if (o.id === orderId) {
-            toast.success(`Order ${orderId.slice(0, 8)} status updated to ${nextStatus}`);
-            return { ...o, status: nextStatus };
-          }
-          return o;
-        })
+        prev.map((o) => (o.id === orderId ? { ...o, status: nextStatus } : o))
       );
 
-      // If active modal is open for this order, sync its status too
       if (selectedOrder && selectedOrder.id === orderId) {
         setSelectedOrder((prev: any) => ({ ...prev, status: nextStatus }));
       }
@@ -49,6 +62,17 @@ export default function StoreOrders() {
     setSelectedOrder(null);
     setIsModalOpen(false);
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-24">
+        <RefreshCw className="w-8 h-8 text-indigo-600 animate-spin mb-4" />
+        <p className="text-xs font-semibold text-slate-400 tracking-wider uppercase">
+          Loading orders...
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 pb-24 animate-in fade-in duration-300">
@@ -78,61 +102,57 @@ export default function StoreOrders() {
           <table className="w-full text-xs text-left border-collapse">
             <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-200">
               <tr>
-                <th className="px-5 py-4 pl-6">ID / Index</th>
+                <th className="px-5 py-4 pl-6">Order #</th>
                 <th className="px-5 py-4 text-left">Customer</th>
                 <th className="px-5 py-4 text-center">Total Price</th>
                 <th className="px-5 py-4 text-center">Payment</th>
-                <th className="px-5 py-4 text-center">Coupon code</th>
                 <th className="px-5 py-4 text-center">Stage Status</th>
                 <th className="px-5 py-4 text-center">Date Placed</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 text-slate-650">
-              {orders.map((order, idx) => (
-                <tr
-                  key={order.id}
-                  onClick={() => openModal(order)}
-                  className="hover:bg-slate-50/40 transition-colors cursor-pointer"
-                >
-                  <td className="py-4 pl-6 font-extrabold text-indigo-600">#{idx + 1}</td>
-                  <td className="px-5 py-4 font-bold text-slate-800">{order.user?.name}</td>
-                  <td className="px-5 py-4 text-center font-black text-slate-800">
-                    {currency}
-                    {order.total}
-                  </td>
-                  <td className="px-5 py-4 text-center font-bold text-slate-500">
-                    {order.paymentMethod}
-                  </td>
-                  <td className="px-5 py-4 text-center">
-                    {order.isCouponUsed ? (
-                      <span className="inline-flex items-center space-x-1 px-2.5 py-0.5 text-[9px] font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-full">
-                        <Tag className="w-2.5 h-2.5" />
-                        <span>{order.coupon?.code}</span>
-                      </span>
-                    ) : (
-                      <span className="text-slate-300 font-bold">—</span>
-                    )}
-                  </td>
-                  <td
-                    className="px-5 py-4 text-center"
-                    onClick={(e) => e.stopPropagation()} // Prevent modal trigger on selector change
+              {orders.map((order) => {
+                const currentIndex = STATUS_STEPS.indexOf(order.status);
+
+                return (
+                  <tr
+                    key={order.id}
+                    onClick={() => openModal(order)}
+                    className="hover:bg-slate-50/40 transition-colors cursor-pointer"
                   >
-                    <select
-                      value={order.status}
-                      onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                      className="p-1.5 text-[10px] font-bold bg-slate-50 border border-slate-205 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 transition-all"
+                    <td className="py-4 pl-6 font-extrabold text-indigo-600">{order.orderNumber}</td>
+                    <td className="px-5 py-4 font-bold text-slate-800">{order.buyer?.name}</td>
+                    <td className="px-5 py-4 text-center font-black text-slate-800">
+                      {currency}
+                      {order.totalAmount}
+                    </td>
+                    <td className="px-5 py-4 text-center font-bold text-slate-500">
+                      {order.paymentGateway}
+                    </td>
+                    <td
+                      className="px-5 py-4 text-center"
+                      onClick={(e) => e.stopPropagation()}
                     >
-                      <option value="ORDER_PLACED">ORDER PLACED</option>
-                      <option value="PROCESSING">PROCESSING</option>
-                      <option value="SHIPPED">SHIPPED</option>
-                      <option value="DELIVERED">DELIVERED</option>
-                    </select>
-                  </td>
-                  <td className="px-5 py-4 text-center font-bold text-slate-400">
-                    {new Date(order.createdAt).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))}
+                      <select
+                        value={order.status}
+                        onChange={(e) =>
+                          handleUpdateStatus(order.id, e.target.value as 'CONFIRMED' | 'SHIPPED' | 'DELIVERED')
+                        }
+                        className="p-1.5 text-[10px] font-bold bg-slate-50 border border-slate-205 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500/20 text-slate-800 transition-all"
+                      >
+                        {STATUS_STEPS.map((step, idx) => (
+                          <option key={step} value={step} disabled={idx <= currentIndex && step !== order.status}>
+                            {step}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-5 py-4 text-center font-bold text-slate-400">
+                      {new Date(order.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -148,7 +168,6 @@ export default function StoreOrders() {
             onClick={(e) => e.stopPropagation()}
             className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-2xl w-full max-w-2xl relative animate-in fade-in zoom-in-95 duration-200 space-y-6"
           >
-            {/* Modal close */}
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 p-1.5 hover:bg-slate-50 text-slate-400 hover:text-slate-600 rounded-full transition-colors cursor-pointer"
@@ -161,47 +180,36 @@ export default function StoreOrders() {
             </h2>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* Customer Coordinates */}
               <div className="space-y-2 bg-slate-50/50 p-4 border border-slate-150 rounded-2xl">
                 <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
                   <span>Customer Coordinates</span>
                 </h3>
                 <div className="text-[11px] font-semibold text-slate-600 space-y-1">
                   <p>
-                    <span className="text-slate-400">Recipient:</span> {selectedOrder.user?.name}
+                    <span className="text-slate-400">Recipient:</span> {selectedOrder.buyer?.name}
                   </p>
                   <p>
-                    <span className="text-slate-400">Email:</span> {selectedOrder.user?.email}
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Contact:</span> {selectedOrder.address?.phone}
+                    <span className="text-slate-400">Email:</span> {selectedOrder.buyer?.email}
                   </p>
                   <p className="leading-relaxed">
-                    <span className="text-slate-400">Destination:</span>{' '}
-                    {`${selectedOrder.address?.street}, ${selectedOrder.address?.city}, ${selectedOrder.address?.state} ${selectedOrder.address?.zip}, ${selectedOrder.address?.country}`}
+                    <span className="text-slate-400">Destination:</span> {selectedOrder.address}
                   </p>
                 </div>
               </div>
 
-              {/* Payment details */}
               <div className="space-y-2 bg-slate-50/50 p-4 border border-slate-150 rounded-2xl">
                 <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-wider flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
                   <span>Audit Parameters</span>
                 </h3>
                 <div className="text-[11px] font-semibold text-slate-600 space-y-1">
                   <p>
                     <span className="text-slate-400">Payment Gateway:</span>{' '}
-                    {selectedOrder.paymentMethod}
+                    {selectedOrder.paymentGateway}
                   </p>
                   <p>
-                    <span className="text-slate-400">Paid:</span>{' '}
-                    <span className="font-extrabold">{selectedOrder.isPaid ? 'YES' : 'NO'}</span>
-                  </p>
-                  <p>
-                    <span className="text-slate-400">Coupons audited:</span>{' '}
-                    {selectedOrder.isCouponUsed
-                      ? `${selectedOrder.coupon?.code} (${selectedOrder.coupon?.discount}% OFF)`
-                      : 'NONE'}
+                    <span className="text-slate-400">Payment Status:</span>{' '}
+                    <span className="font-extrabold">{selectedOrder.paymentStatus}</span>
                   </p>
                   <p>
                     <span className="text-slate-400">Dispatch stage:</span>{' '}
@@ -215,7 +223,6 @@ export default function StoreOrders() {
               </div>
             </div>
 
-            {/* List items ordered */}
             <div className="space-y-2.5">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                 Line Items Audit List
@@ -223,13 +230,13 @@ export default function StoreOrders() {
               <div className="flex flex-col space-y-2.5 max-h-[160px] overflow-y-auto no-scrollbar">
                 {selectedOrder.orderItems.map((item: any, idx: number) => (
                   <div
-                    key={item.product?.id || idx}
+                    key={item.id || idx}
                     className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-2xl"
                   >
                     <div className="flex items-center space-x-3">
                       <div className="w-10 h-10 bg-slate-100 border border-slate-200/50 rounded-xl flex items-center justify-center overflow-hidden shrink-0">
                         <Image
-                          src={item.product?.images?.[0]?.src || item.product?.images?.[0]}
+                          src={item.product?.images?.[0]}
                           alt={item.product?.name}
                           width={32}
                           height={32}
@@ -257,13 +264,12 @@ export default function StoreOrders() {
               </div>
             </div>
 
-            {/* Actions footer */}
             <div className="flex justify-between items-center border-t border-slate-100 pt-4">
               <div className="flex items-center space-x-1.5 text-xs text-slate-400 font-bold">
                 <span>Total bill amount:</span>
                 <span className="text-sm font-black text-indigo-650">
                   {currency}
-                  {selectedOrder.total}
+                  {selectedOrder.totalAmount}
                 </span>
               </div>
               <button

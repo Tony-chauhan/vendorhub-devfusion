@@ -80,15 +80,43 @@ export const searchProductsSchema = z.object({
 export const createOrderSchema = z.object({
   totalAmount: positiveFloat,
   address: safeText.min(5, "Address must be at least 5 characters"),
+  paymentMethod: z.enum(["razorpay", "cod"]).default("cod"),
   items: z
     .array(
       z.object({
-        productId: safeUuid,
+        // Not a strict UUID: mock-mode product IDs (e.g. "prod_1") aren't
+        // UUIDs, and real-mode IDs are verified against Prisma anyway.
+        productId: z.string().min(1, "Product ID is required"),
         quantity: z.number().int().positive("Quantity must be at least 1"),
         price: positiveFloat,
       })
     )
     .min(1, "Order must contain at least one item"),
+});
+
+export const verifyRazorpayPaymentSchema = z.object({
+  orderId: safeUuid,
+  razorpayOrderId: z.string().min(1, "Missing Razorpay order ID"),
+  razorpayPaymentId: z.string().min(1, "Missing Razorpay payment ID"),
+  razorpaySignature: z.string().min(1, "Missing Razorpay signature"),
+});
+
+// ─── Wishlist ───────────────────────────────────────────────────
+export const toggleWishlistSchema = z.object({
+  productId: safeUuid,
+});
+
+// ─── Reviews ────────────────────────────────────────────────────
+export const createReviewSchema = z.object({
+  productId: safeUuid,
+  rating: z.number().int().min(1, "Rating must be at least 1").max(5, "Rating must be at most 5"),
+  comment: safeText.min(5, "Review must be at least 5 characters").max(1000, "Review must be under 1000 characters"),
+});
+
+// ─── Vendor Order Status ─────────────────────────────────────────
+export const updateOrderStatusSchema = z.object({
+  orderId: safeUuid,
+  status: z.enum(["CONFIRMED", "SHIPPED", "DELIVERED"]),
 });
 
 // ─── Admin Actions ──────────────────────────────────────────────

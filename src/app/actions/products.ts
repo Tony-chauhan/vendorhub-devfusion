@@ -159,7 +159,7 @@ function sortCatalogProducts(products: CatalogProduct[], sort: SearchProductsInp
   }
 }
 
-async function getVendorStoreForUser(clerkId: string) {
+export async function getVendorStoreForUser(clerkId: string) {
   const user = await prisma.user.findUnique({
     where: { clerkId },
     include: { store: true },
@@ -226,6 +226,153 @@ export async function searchProducts(rawFilters: SearchProductsInput = {}) {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to search products";
     return { success: false as const, error: message, products: [] as CatalogProduct[] };
+  }
+}
+
+export interface ProductReviewItem {
+  id: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+  user: { name: string | null };
+}
+
+export interface ProductDetail {
+  id: string;
+  name: string;
+  description: string;
+  price: number;
+  mrp: number;
+  stock: number;
+  images: string[];
+  category: string;
+  location: string | null;
+  storeId: string;
+  storeName?: string;
+  avgRating: number;
+  inStock: boolean;
+  createdAt: string;
+  updatedAt: string;
+  rating: ProductReviewItem[];
+  store: {
+    id: string;
+    name: string;
+    description: string | null;
+    address: string | null;
+    logo: string | null;
+  } | null;
+}
+
+export async function getProductById(id: string): Promise<
+  | { success: true; product: ProductDetail }
+  | { success: false; error: string; product: null }
+> {
+  try {
+    if (!id || typeof id !== "string") {
+      return { success: false, error: "Invalid product ID", product: null };
+    }
+
+    if (isMockDb()) {
+      const dummy = productDummyData.find((p) => p.id === id);
+      if (!dummy) {
+        return { success: false, error: "Product not found", product: null };
+      }
+
+      const base = mapDummyToCatalog(dummy);
+      const dummyReviews = dummy.rating ?? [];
+
+      return {
+        success: true,
+        product: {
+          ...base,
+          rating: dummyReviews.map((r: any, idx: number) => ({
+            id: r.id ?? `rat_${idx}`,
+            rating: r.rating,
+            comment: r.review ?? null,
+            createdAt: r.createdAt ?? new Date().toISOString(),
+            user: { name: r.user?.name ?? null },
+          })),
+          store: dummy.store
+            ? {
+                id: dummy.storeId,
+                name: dummy.store.name,
+                description: null,
+                address: dummy.store.address ?? null,
+                logo: null,
+              }
+            : null,
+        },
+      };
+    }
+
+    const row = await prisma.product.findUnique({
+      where: { id },
+      include: {
+        store: true,
+        reviews: {
+          include: { buyer: { select: { name: true } } },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!row) {
+      return { success: false, error: "Product not found", product: null };
+    }
+
+    const base = mapDbToCatalog(row);
+
+    return {
+      success: true,
+      product: {
+        ...base,
+        rating: row.reviews.map((r) => ({
+          id: r.id,
+          rating: r.rating,
+          comment: r.comment,
+          createdAt: r.createdAt.toISOString(),
+          user: { name: r.buyer.name },
+        })),
+        store: {
+          id: row.store.id,
+          name: row.store.name,
+          description: row.store.description,
+          address: row.store.location,
+          logo: row.store.logo,
+        },
+      },
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to load product";
+    return { success: false, error: message, product: null };
+  }
+}
+
+export async function getProductsByIds(ids: string[]): Promise<
+  { success: true; products: CatalogProduct[] } | { success: false; error: string; products: CatalogProduct[] }
+> {
+  try {
+    if (!Array.isArray(ids) || ids.length === 0) {
+      return { success: true, products: [] };
+    }
+
+    if (isMockDb()) {
+      const products = productDummyData.filter((p) => ids.includes(p.id)).map(mapDummyToCatalog);
+      return { success: true, products };
+    }
+
+    const rows = await prisma.product.findMany({
+      where: { id: { in: ids } },
+      include: {
+        reviews: { select: { rating: true } },
+        store: { select: { name: true } },
+      },
+    });
+
+    return { success: true, products: rows.map(mapDbToCatalog) };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to load products";
+    return { success: false, error: message, products: [] };
   }
 }
 

@@ -33,6 +33,18 @@ enum RefundStatus {
   REJECTED
 }
 
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum PaymentGateway {
+  RAZORPAY
+  COD
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -99,6 +111,12 @@ model Order {
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
+  paymentStatus     PaymentStatus   @default(PENDING)
+  paymentGateway    PaymentGateway?
+  razorpayOrderId   String?         @unique
+  razorpayPaymentId String?         @unique
+  razorpaySignature String?
+
   buyerId String
   buyer   User   @relation("BuyerOrders", fields: [buyerId], references: [id])
 
@@ -114,6 +132,8 @@ model OrderItem {
   product   Product @relation(fields: [productId], references: [id])
   orderId   String
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  review Review?
 }
 
 model Review {
@@ -126,6 +146,11 @@ model Review {
   buyer     User     @relation(fields: [buyerId], references: [id])
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItemId String?    @unique
+  orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+
+  @@unique([buyerId, productId])
 }
 
 model Refund {

@@ -16,6 +16,8 @@ export const ADMIN_EMAIL =
 const dbUrl = process.env.DATABASE_URL ?? "";
 const clerkSecret = process.env.CLERK_SECRET_KEY ?? "";
 const clerkPub = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";
+const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET ?? "";
 
 /** True when the database URL is absent or points to a placeholder. */
 export function isMockDb(): boolean {
@@ -35,6 +37,16 @@ export function isMockAuth(): boolean {
     !clerkPub ||
     clerkPub.includes("mock") ||
     clerkPub.startsWith("pk_test_dGVhbXhkZXNpZ24")
+  );
+}
+
+/** True when Razorpay credentials are absent or placeholders. */
+export function isMockPayments(): boolean {
+  return (
+    !razorpayKeyId ||
+    razorpayKeyId.includes("mock") ||
+    !razorpayKeySecret ||
+    razorpayKeySecret.includes("mock")
   );
 }
 

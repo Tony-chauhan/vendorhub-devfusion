@@ -15,14 +15,24 @@ import {
   AlertTriangle
 } from "lucide-react";
 import Link from "next/link";
+import Script from "next/script";
+import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
-import { createOrder } from "@/app/actions/orders";
+import { createOrder, verifyRazorpayPayment } from "@/app/actions/orders";
+import { getProductsByIds } from "@/app/actions/products";
 import { clearCart } from "@/lib/features/cart/cartSlice";
+
+declare global {
+  interface Window {
+    Razorpay?: any;
+  }
+}
 
 export default function CheckoutPage() {
   const dispatch = useDispatch();
+  const router = useRouter();
 
   // Navigation / Success states
   const [isSuccess, setIsSuccess] = useState(false);
@@ -35,91 +45,57 @@ export default function CheckoutPage() {
   const [street, setStreet] = useState("");
   const [city, setCity] = useState("Bangalore");
   const [zipCode, setZipCode] = useState("");
-  const [selectedGateway, setSelectedGateway] = useState<"stripe" | "razorpay" | "cod">("stripe");
+  const [selectedGateway, setSelectedGateway] = useState<"razorpay" | "cod">("razorpay");
   const [formError, setFormError] = useState("");
-
-  // Card input states
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-
-  // UPI input states
-  const [upiId, setUpiId] = useState("");
-  const [upiTab, setUpiTab] = useState<"id" | "qr">("id");
   const [isProcessingSim, setIsProcessingSim] = useState(false);
 
   // Redux items
   const { cartItems } = useSelector((state: any) => state.cart || { cartItems: {} });
-  const productsList = useSelector((state: any) => state.product?.list || []);
 
   const [resolvedCartItems, setResolvedCartItems] = useState<any[]>([]);
+  const [isResolvingCart, setIsResolvingCart] = useState(true);
 
-  // Synchronize and resolve Redux cart items or use demo mock sandbox items
+  // Resolve real cart items from the database; redirect away if the cart is empty.
+  // Skipped once an order has succeeded, since placing it intentionally clears the
+  // cart and would otherwise bounce the success screen straight back to /cart.
   useEffect(() => {
-    const list: any[] = [];
-    for (const [productId, quantity] of Object.entries(cartItems)) {
-      const matched = productsList.find((p: any) => p.id === productId);
-      if (matched) {
-        list.push({
-          id: matched.id,
-          name: matched.name,
-          price: matched.price,
-          quantity: quantity as number,
-          image: matched.images?.[0] || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
-          vendorName: matched.vendorName || "S-mart"
-        });
+    if (isSuccess) return;
+
+    const productIds = Object.keys(cartItems);
+
+    if (productIds.length === 0) {
+      router.replace("/cart");
+      return;
+    }
+
+    let cancelled = false;
+    setIsResolvingCart(true);
+
+    (async () => {
+      const result = await getProductsByIds(productIds);
+      const products = result.success ? result.products : [];
+
+      const list = products
+        .filter((p: any) => cartItems[p.id])
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          price: p.price,
+          quantity: cartItems[p.id] as number,
+          image: p.images?.[0] || "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
+          vendorName: p.storeName || "Local Vendor",
+        }));
+
+      if (!cancelled) {
+        setResolvedCartItems(list);
+        setIsResolvingCart(false);
       }
-    }
+    })();
 
-    if (list.length === 0) {
-      // Fallback sandbox preview items if cart is empty
-      setResolvedCartItems([
-        {
-          id: "prod_1",
-          name: "Modern table lamp",
-          price: 29,
-          quantity: 1,
-          image: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80",
-          vendorName: "S-mart"
-        },
-        {
-          id: "prod_6",
-          name: "Security Camera",
-          price: 29,
-          quantity: 2,
-          image: "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80",
-          vendorName: "S-mart"
-        }
-      ]);
-    } else {
-      setResolvedCartItems(list);
-    }
-  }, [cartItems, productsList]);
-
-  // Card number input formatter (insert spaces every 4 digits)
-  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 16) value = value.slice(0, 16);
-    const formatted = value.replace(/(\d{4})(?=\d)/g, "$1 ");
-    setCardNumber(formatted);
-  };
-
-  // Expiry date input formatter (MM/YY)
-  const handleCardExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 4) value = value.slice(0, 4);
-    if (value.length > 2) {
-      value = `${value.slice(0, 2)}/${value.slice(2)}`;
-    }
-    setCardExpiry(value);
-  };
-
-  // CVV code input formatter (3 digits)
-  const handleCardCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, "");
-    if (value.length > 3) value = value.slice(0, 3);
-    setCardCvv(value);
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [cartItems, router, isSuccess]);
 
   // Summary Calculations
   const subtotal = resolvedCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
@@ -155,32 +131,10 @@ export default function CheckoutPage() {
     e.preventDefault();
     setFormError("");
 
-    // 1. Shipping form validation
+    // Shipping form validation
     if (!fullName || !phone || !street || !zipCode) {
       setFormError("Please fill out all shipping details before proceeding.");
       return;
-    }
-
-    // 2. Inline payment validation based on selected gateway
-    if (selectedGateway === "stripe") {
-      const rawCard = cardNumber.replace(/\s/g, "");
-      if (rawCard.length < 16) {
-        setFormError("Stripe payment simulated: Card number must be 16 digits.");
-        return;
-      }
-      if (cardExpiry.length < 5) {
-        setFormError("Stripe payment simulated: Card expiry must be in MM/YY format.");
-        return;
-      }
-      if (cardCvv.length < 3) {
-        setFormError("Stripe payment simulated: CVV code must be 3 digits.");
-        return;
-      }
-    } else if (selectedGateway === "razorpay") {
-      if (upiTab === "id" && (!upiId || !upiId.includes("@"))) {
-        setFormError("Razorpay simulated: Please enter a valid mock UPI ID containing '@' (e.g. name@upi).");
-        return;
-      }
     }
 
     setIsProcessingSim(true);
@@ -188,77 +142,88 @@ export default function CheckoutPage() {
     // Prepare full address string
     const fullAddress = `${street}, ${city}, PIN: ${zipCode}. Phone: ${phone}`;
 
-    setTimeout(() => {
-      startTransition(async () => {
-        // Create order using Server Action
-        const result = await createOrder({
-          totalAmount,
-          address: fullAddress,
-          items: resolvedCartItems.map(item => ({
-            productId: item.id,
-            quantity: item.quantity,
-            price: item.price
-          }))
-        });
-
-        setIsProcessingSim(false);
-
-        if (result.success) {
-          const orderNum = result.orderNumber || `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
-          setGeneratedOrderNum(orderNum);
-
-          // Save custom checkout order in localStorage so it appears in My Orders
-          const newOrder = {
-            id: result.orderId || `order_${Math.floor(100000 + Math.random() * 900000)}`,
-            total: totalAmount,
-            status: selectedGateway === "cod" ? "PLACED" : "CONFIRMED", // Auto-confirmed if mock-paid online
-            createdAt: new Date().toISOString(),
-            address: {
-              name: fullName,
-              street: street,
-              city: city,
-              zip: zipCode,
-              state: "KA",
-              country: "India",
-              phone: phone
-            },
-            orderItems: resolvedCartItems.map((item) => ({
-              price: item.price,
-              quantity: item.quantity,
-              product: {
-                id: item.id,
-                name: item.name,
-                images: [item.image],
-                category: "Electronics"
-              }
-            })),
-            user: {
-              name: fullName || "Dharmender Chauhan"
-            }
-          };
-
-          if (typeof window !== 'undefined') {
-            const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
-            let localOrders: any[] = [];
-            if (savedOrdersStr) {
-              try {
-                localOrders = JSON.parse(savedOrdersStr);
-              } catch (err) {}
-            }
-            localOrders.unshift(newOrder);
-            localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
-          }
-
-          // Clear shopping cart on successful checkout placement
-          dispatch(clearCart());
-
-          setIsSuccess(true);
-          triggerConfetti();
-        } else {
-          setFormError(result.error || "Sandbox transaction rejected by server backend.");
-        }
+    startTransition(async () => {
+      const result = await createOrder({
+        totalAmount,
+        address: fullAddress,
+        paymentMethod: selectedGateway,
+        items: resolvedCartItems.map(item => ({
+          productId: item.id,
+          quantity: item.quantity,
+          price: item.price
+        }))
       });
-    }, 1500); // 1.5s simulated gateway processing latency
+
+      if (!result.success) {
+        setIsProcessingSim(false);
+        setFormError(result.error || "Checkout was rejected by the server.");
+        return;
+      }
+
+      setGeneratedOrderNum(result.orderNumber);
+
+      // COD (or mock-mode): order is placed immediately, no payment step.
+      if (!result.requiresPayment) {
+        setIsProcessingSim(false);
+        dispatch(clearCart());
+        setIsSuccess(true);
+        triggerConfetti();
+        return;
+      }
+
+      // Mock-mode Razorpay: simulate an instant successful payment without loading the widget.
+      if (result.mockPayment) {
+        setIsProcessingSim(false);
+        dispatch(clearCart());
+        setIsSuccess(true);
+        triggerConfetti();
+        return;
+      }
+
+      // Real Razorpay: open the hosted checkout widget.
+      if (!window.Razorpay) {
+        setIsProcessingSim(false);
+        setFormError("Payment gateway is still loading. Please try again in a moment.");
+        return;
+      }
+
+      const razorpayCheckout = new window.Razorpay({
+        key: result.razorpayKeyId,
+        amount: result.amountPaise,
+        currency: result.currency,
+        order_id: result.razorpayOrderId,
+        name: "VendorHub",
+        description: `Order ${result.orderNumber}`,
+        prefill: { name: fullName, contact: phone },
+        handler: async (response: any) => {
+          const verification = await verifyRazorpayPayment({
+            orderId: result.orderId,
+            razorpayOrderId: response.razorpay_order_id,
+            razorpayPaymentId: response.razorpay_payment_id,
+            razorpaySignature: response.razorpay_signature,
+          });
+
+          setIsProcessingSim(false);
+
+          if (verification.success) {
+            dispatch(clearCart());
+            setIsSuccess(true);
+            triggerConfetti();
+          } else {
+            setFormError(verification.error || "Payment verification failed. Please contact support.");
+          }
+        },
+        modal: {
+          ondismiss: () => {
+            setIsProcessingSim(false);
+            setFormError("Payment was cancelled before it completed.");
+          },
+        },
+        theme: { color: "#4f46e5" },
+      });
+
+      razorpayCheckout.open();
+    });
   };
 
   // Success view
@@ -282,9 +247,9 @@ export default function CheckoutPage() {
               {selectedGateway === "cod" ? "Order Placed Successfully!" : "Payment Successful!"}
             </h1>
             <p className="text-slate-500 text-sm">
-              {selectedGateway === "cod" 
-                ? "Your Cash on Delivery order is confirmed and hyperlocally scheduled." 
-                : "Thank you for your purchase. Your payment was verified instantly inside the Stripe/Razorpay sandbox."}
+              {selectedGateway === "cod"
+                ? "Your Cash on Delivery order is confirmed and hyperlocally scheduled."
+                : "Thank you for your purchase. Your payment has been verified."}
             </p>
           </div>
 
@@ -358,9 +323,21 @@ export default function CheckoutPage() {
     );
   }
 
+  if (isResolvingCart) {
+    return (
+      <div className="w-full min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+        <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+        <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+          Loading Checkout...
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full min-h-screen bg-slate-50 text-slate-800 flex flex-col font-sans">
-      
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
+
       {/* Mini Glassmorphic Header */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-md bg-white/75 border-b border-slate-200/80 px-6 py-4 flex items-center justify-between shadow-sm">
         <Link href="/" className="flex items-center gap-2 text-slate-550 hover:text-slate-800 transition-colors">
@@ -368,11 +345,11 @@ export default function CheckoutPage() {
           <span className="text-sm font-semibold">Back to Marketplace</span>
         </Link>
         <span className="font-extrabold text-xl bg-clip-text text-transparent bg-gradient-to-r from-purple-600 via-indigo-500 to-indigo-750">
-          Secure Sandbox Checkout
+          Secure Checkout
         </span>
         <div className="flex items-center gap-1.5 text-xs text-slate-500 bg-white px-3.5 py-1.5 rounded-full border border-slate-200 shadow-sm">
           <ShieldCheck className="h-4 w-4 text-emerald-600" />
-          <span>AES-256 Mock Encrypted</span>
+          <span>Encrypted Checkout</span>
         </div>
       </header>
 
@@ -457,28 +434,13 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Section 2: Inline Payment Gateway Sandbox Selection */}
+          {/* Section 2: Payment Method */}
           <div className="bg-white border border-slate-200/80 p-6 sm:p-8 rounded-3xl shadow-md shadow-slate-100 flex flex-col gap-5">
             <h2 className="font-black text-lg text-slate-900 flex items-center gap-2 pb-3 border-b border-slate-200">
-              <CreditCard className="h-5 w-5 text-purple-600" /> 2. Payment Gateway Sandbox
+              <CreditCard className="h-5 w-5 text-purple-600" /> 2. Payment Method
             </h2>
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {/* Stripe */}
-              <button
-                type="button"
-                onClick={() => setSelectedGateway("stripe")}
-                className={`p-4.5 rounded-2xl border text-left transition-all flex flex-col gap-2 cursor-pointer ${
-                  selectedGateway === "stripe"
-                    ? "bg-indigo-50/50 border-indigo-500 text-indigo-950 font-bold shadow-sm shadow-indigo-100"
-                    : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300"
-                }`}
-              >
-                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">Stripe Gateway</span>
-                <span className="text-sm font-black text-slate-800">Credit Card</span>
-                <span className="text-[10px] text-slate-450 leading-tight">Instant simulated credit card settlement.</span>
-              </button>
-
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Razorpay */}
               <button
                 type="button"
@@ -489,9 +451,9 @@ export default function CheckoutPage() {
                     : "bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100 hover:border-slate-300"
                 }`}
               >
-                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">Razorpay UPI</span>
-                <span className="text-sm font-black text-slate-800">UPI / QR Scan</span>
-                <span className="text-[10px] text-slate-450 leading-tight">Unified domestic wallet settlement simulator.</span>
+                <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">Razorpay</span>
+                <span className="text-sm font-black text-slate-800">UPI / Card / Netbanking</span>
+                <span className="text-[10px] text-slate-450 leading-tight">Pay securely via Razorpay's hosted checkout.</span>
               </button>
 
               {/* Cash on Delivery */}
@@ -506,236 +468,47 @@ export default function CheckoutPage() {
               >
                 <span className="text-[9px] uppercase font-extrabold tracking-widest text-slate-400">COD Option</span>
                 <span className="text-sm font-black text-slate-800">Cash on Delivery</span>
-                <span className="text-[10px] text-slate-450 leading-tight">Safe local settlement at shipping arrival.</span>
+                <span className="text-[10px] text-slate-450 leading-tight">Pay the delivery driver when your package arrives.</span>
               </button>
             </div>
 
-            {/* Dynamic Inline Forms via AnimatePresence */}
             <div className="border border-slate-150 rounded-2xl p-5 bg-slate-50/60 shadow-inner">
               <AnimatePresence mode="wait">
-                {selectedGateway === "stripe" && (
-                  <motion.div
-                    key="stripe"
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: "auto" }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.25 }}
-                    className="flex flex-col gap-5 overflow-hidden"
-                  >
-                    {/* Visual Digital Credit Card Graphic */}
-                    <div className="relative w-full max-w-[290px] h-40 rounded-2xl bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 border border-white/10 p-5 flex flex-col justify-between text-white shadow-lg shadow-indigo-950/20 overflow-hidden shrink-0 mx-auto transition-transform hover:scale-[1.01]">
-                      <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-[40px] pointer-events-none" />
-                      <div className="flex justify-between items-start">
-                        <div className="flex flex-col gap-1">
-                          <span className="text-[7.5px] uppercase tracking-widest text-slate-455 font-extrabold">Stripe Sandbox Card</span>
-                          <div className="w-8 h-6 bg-amber-500/25 rounded border border-amber-500/35 flex items-center justify-center">
-                            <div className="grid grid-cols-2 gap-0.5 w-4 h-3.5 opacity-80">
-                              <div className="border border-amber-500/40 rounded-[1px]"></div>
-                              <div className="border border-amber-500/40 rounded-[1px]"></div>
-                              <div className="border border-amber-500/40 rounded-[1px]"></div>
-                              <div className="border border-amber-500/40 rounded-[1px]"></div>
-                            </div>
-                          </div>
-                        </div>
-                        <span className="font-black italic text-sm tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-400 to-indigo-300">stripe</span>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        {/* Masked Card Number */}
-                        <div className="font-mono text-xs sm:text-sm tracking-[0.25em] font-medium text-slate-100">
-                          {cardNumber || "•••• •••• •••• ••••"}
-                        </div>
-
-                        <div className="flex justify-between items-end text-[9px]">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">Cardholder</span>
-                            <span className="font-bold tracking-wide truncate max-w-[130px]">{fullName || "Dharmender Chauhan"}</span>
-                          </div>
-                          <div className="flex gap-4 shrink-0">
-                            <div className="flex flex-col gap-0.5 items-end">
-                              <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">Expires</span>
-                              <span className="font-mono font-bold">{cardExpiry || "MM/YY"}</span>
-                            </div>
-                            <div className="flex flex-col gap-0.5 items-end">
-                              <span className="text-[6.5px] uppercase tracking-wider text-slate-455 font-bold">CVV</span>
-                              <span className="font-mono font-bold">{cardCvv ? "•••" : "•••"}</span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Interactive Stripe input fields */}
-                    <div className="flex flex-col gap-3.5">
-                      <div className="flex justify-between items-center bg-indigo-50/50 p-2.5 rounded-xl border border-indigo-100/80 shadow-sm">
-                        <span className="text-[10px] text-indigo-900 font-extrabold uppercase tracking-wider pl-1.5 flex items-center gap-1.5">
-                          <Sparkles className="w-3.5 h-3.5 text-indigo-550 shrink-0" /> Sandbox Credentials
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setCardNumber("4242 4242 4242 4242");
-                            setCardExpiry("12/28");
-                            setCardCvv("123");
-                            if (!fullName) setFullName("Dharmender Chauhan");
-                          }}
-                          className="text-[10px] text-indigo-700 hover:text-indigo-900 font-black bg-white border border-indigo-250 px-3 py-1.5 rounded-lg transition-all cursor-pointer shadow-sm active:scale-95 hover:shadow-indigo-200/40 flex items-center gap-1 animate-pulse"
-                        >
-                          ⚡ Autofill Mock Card
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
-                        <input
-                          type="text"
-                          placeholder="Dharmender Chauhan"
-                          value={fullName}
-                          onChange={(e) => setFullName(e.target.value)}
-                          className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
-                        />
-                      </div>
-
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Card Number</label>
-                        <div className="relative">
-                          <input
-                            type="text"
-                            placeholder="4242 4242 4242 4242"
-                            value={cardNumber}
-                            onChange={handleCardNumberChange}
-                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono tracking-widest"
-                          />
-                          <CreditCard className="w-4 h-4 absolute right-3.5 top-3 text-slate-400" />
-                        </div>
-                        <span className="text-[9px] text-slate-450 font-medium">Use '4242 4242 4242 4242' for simulated Stripe approvals.</span>
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Expiry Date</label>
-                          <input
-                            type="text"
-                            placeholder="12/28"
-                            value={cardExpiry}
-                            onChange={handleCardExpiryChange}
-                            maxLength={5}
-                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono"
-                          />
-                        </div>
-                        <div className="flex flex-col gap-1">
-                          <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">CVV Code</label>
-                          <input
-                            type="password"
-                            placeholder="123"
-                            maxLength={3}
-                            value={cardCvv}
-                            onChange={handleCardCvvChange}
-                            className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-mono"
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-
-                {selectedGateway === "razorpay" && (
+                {selectedGateway === "razorpay" ? (
                   <motion.div
                     key="razorpay"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="flex flex-col gap-4 overflow-hidden"
+                    className="flex items-start gap-2.5 text-slate-600 text-xs leading-relaxed overflow-hidden"
                   >
-                    {/* UPI tabs */}
-                    <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
-                      <button
-                        type="button"
-                        onClick={() => setUpiTab("id")}
-                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                          upiTab === "id"
-                            ? "bg-white text-indigo-950 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        UPI ID
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setUpiTab("qr")}
-                        className={`py-1.5 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
-                          upiTab === "qr"
-                            ? "bg-white text-indigo-950 shadow-sm"
-                            : "text-slate-500 hover:text-slate-700"
-                        }`}
-                      >
-                        Simulate Scan QR
-                      </button>
-                    </div>
-
-                    {upiTab === "id" ? (
-                      <div className="flex flex-col gap-1">
-                        <label className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Enter UPI Address</label>
-                        <input
-                          type="text"
-                          placeholder="dharmender@okaxis"
-                          value={upiId}
-                          onChange={(e) => setUpiId(e.target.value)}
-                          className="bg-white border border-slate-200 hover:border-slate-350 focus:border-indigo-550 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 placeholder-slate-400 focus:outline-none w-full font-mono transition-all"
-                        />
-                        <span className="text-[9px] text-slate-455 font-medium">Use any mock handles, e.g. pay@upi, phonepe@ybl.</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center p-3 bg-white border border-slate-200/80 rounded-xl gap-2.5">
-                        <div className="w-28 h-28 bg-white border border-slate-200 p-2 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden group">
-                          <div className="grid grid-cols-4 gap-1 w-full h-full opacity-80">
-                            {Array.from({ length: 16 }).map((_, i) => (
-                              <div
-                                key={i}
-                                className={`rounded-sm ${(i === 0 || i === 3 || i === 12 || i === 15 || i === 5 || i === 10) ? 'bg-indigo-950' : 'bg-indigo-950/20'}`}
-                              />
-                            ))}
-                          </div>
-                          <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 top-1/2 -translate-y-1/2 animate-bounce opacity-80 shadow-md shadow-indigo-500/50" />
-                        </div>
-                        <span className="text-[9px] text-center text-slate-440 leading-normal font-semibold max-w-xs">
-                          Scan simulation active. QR scanner validates immediate wallet confirmations.
-                        </span>
-                      </div>
-                    )}
+                    <ShieldCheck className="h-4.5 w-4.5 text-indigo-600 shrink-0 mt-0.5" />
+                    <p>
+                      You'll be redirected to Razorpay's secure hosted checkout to complete payment via UPI, card, or netbanking.
+                    </p>
                   </motion.div>
-                )}
-
-                {selectedGateway === "cod" && (
+                ) : (
                   <motion.div
                     key="cod"
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: "auto" }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.25 }}
-                    className="flex flex-col gap-2 overflow-hidden text-slate-600 text-xs leading-relaxed"
+                    className="overflow-hidden"
                   >
                     <div className="bg-emerald-50/50 border border-emerald-200 p-4 rounded-xl text-emerald-800 flex items-start gap-2.5">
-                      <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5 animate-pulse" />
+                      <CheckCircle className="h-4.5 w-4.5 text-emerald-600 shrink-0 mt-0.5" />
                       <div>
-                        <strong className="font-bold text-slate-800">Cash on Delivery Active:</strong>
+                        <strong className="font-bold text-slate-800">Cash on Delivery:</strong>
                         <p className="mt-1 text-[11px] text-emerald-700/90 font-semibold">
-                          No pre-payment is required! Pay the delivery driver directly when your hyperlocal package arrives at your destination.
+                          No pre-payment required. Pay the delivery driver directly when your hyperlocal package arrives.
                         </p>
                       </div>
                     </div>
                   </motion.div>
                 )}
               </AnimatePresence>
-            </div>
-
-            {/* Simulated processing note */}
-            <div className="p-4 bg-amber-50 border border-amber-200 text-amber-800 text-[11px] rounded-xl leading-relaxed flex items-start gap-2.5">
-              <Sparkles className="h-4.5 w-4.5 text-amber-600 shrink-0 mt-0.5" />
-              <div>
-                <strong>DevFusion 2.0 Evaluation:</strong> This checkout processes orders inside a secure sandbox transaction, automatically decreasing product stock and verifying vendor payouts instantly without charging real cards.
-              </div>
             </div>
 
             {/* Fulfill Action */}
@@ -746,11 +519,11 @@ export default function CheckoutPage() {
             >
               {isPending || isProcessingSim ? (
                 <>
-                  <Loader2 className="h-4.5 w-4.5 animate-spin" /> Verifying Inline Gateway Sandbox...
+                  <Loader2 className="h-4.5 w-4.5 animate-spin" /> Processing...
                 </>
               ) : (
                 <>
-                  {selectedGateway === "cod" ? "Place Order (COD)" : "Pay & Complete Sandbox Order"} <ChevronRight className="h-4.5 w-4.5" />
+                  {selectedGateway === "cod" ? "Place Order (COD)" : "Pay & Complete Order"} <ChevronRight className="h-4.5 w-4.5" />
                 </>
               )}
             </button>

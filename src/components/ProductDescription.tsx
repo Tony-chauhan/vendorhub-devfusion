@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Star, MessageSquare, ShieldAlert, ArrowRight, Store } from 'lucide-react';
 import RatingModal from './RatingModal';
 
@@ -16,18 +17,18 @@ interface ProductDescriptionProps {
     images: any[];
     category: string;
     rating?: any[];
-    store: {
+    store?: {
       id: string;
       name: string;
-      description: string;
-      username: string;
-      address: string;
+      description: string | null;
+      address: string | null;
       logo: any;
-    };
+    } | null;
   };
 }
 
 export default function ProductDescription({ product }: ProductDescriptionProps) {
+  const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<'Description' | 'Reviews'>('Description');
   const [showRatingModal, setShowRatingModal] = useState(false);
 
@@ -132,7 +133,7 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
                     </div>
 
                     <p className="text-xs sm:text-sm text-slate-500 leading-relaxed max-w-xl font-medium pt-1">
-                      {item.review}
+                      {item.comment}
                     </p>
                   </div>
                 </div>
@@ -195,7 +196,11 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
 
       {/* Rating modal instance */}
       {showRatingModal && (
-        <RatingModal productId={product.id} onClose={() => setShowRatingModal(false)} />
+        <RatingModal
+          productId={product.id}
+          onClose={() => setShowRatingModal(false)}
+          onSuccess={() => router.refresh()}
+        />
       )}
     </div>
   );

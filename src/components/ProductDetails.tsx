@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { addToCart } from '@/lib/features/cart/cartSlice';
 import { getAIRecommendations } from '@/app/actions/ai';
+import { toggleWishlist, getWishlistedProductIds } from '@/app/actions/wishlist';
 import Counter from './Counter';
 
 interface ProductDetailsProps {
@@ -48,6 +49,27 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   useEffect(() => {
     setMainImage(product.images[0]);
   }, [product]);
+
+  // Hydrate wishlist state for this product from the server
+  useEffect(() => {
+    getWishlistedProductIds().then((result) => {
+      if (result.success) {
+        setIsWished(result.productIds.includes(productId));
+      }
+    });
+  }, [productId]);
+
+  const handleToggleWishlist = () => {
+    startTransition(async () => {
+      const result = await toggleWishlist(productId);
+      if (result.success) {
+        setIsWished(result.wishlisted);
+        toast.success(result.wishlisted ? 'Added to wishlist' : 'Removed from wishlist');
+      } else {
+        toast.error(result.error);
+      }
+    });
+  };
 
   // Load Gemini recommendations
   useEffect(() => {
@@ -175,10 +197,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
             priority
           />
           <button
-            onClick={() => {
-              setIsWished(!isWished);
-              toast.success(isWished ? 'Removed from wishlist' : 'Added to wishlist');
-            }}
+            onClick={handleToggleWishlist}
             className="absolute top-4 right-4 p-2.5 bg-white/95 backdrop-blur-sm border border-slate-200/60 hover:bg-slate-50 text-slate-400 hover:text-rose-500 rounded-full shadow-sm transition-all duration-300 cursor-pointer"
           >
             <Heart className={`w-4.5 h-4.5 ${isWished ? 'fill-rose-500 text-rose-500' : ''}`} />

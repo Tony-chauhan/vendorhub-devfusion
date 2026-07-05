@@ -3,27 +3,19 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 import { Dot, ChevronRight } from 'lucide-react';
-import { useSelector } from 'react-redux';
 import Rating from './Rating';
 import RatingModal from './RatingModal';
 
 interface OrderItemProps {
   order: {
     id: string;
-    total: number;
+    orderNumber: string;
+    totalAmount: number;
     status: string;
     createdAt: string;
-    address: {
-      name: string;
-      street: string;
-      city: string;
-      state: string;
-      zip: string;
-      country: string;
-      phone: string;
-    };
+    address: string;
     orderItems: Array<{
-      productId: string;
+      id: string;
       quantity: number;
       price: number;
       product: {
@@ -32,16 +24,15 @@ interface OrderItemProps {
         images: any[];
         category: string;
       };
+      review: { id: string; rating: number; comment: string | null } | null;
     }>;
   };
+  onReviewSubmitted?: () => void;
 }
 
-export default function OrderItem({ order }: OrderItemProps) {
+export default function OrderItem({ order, onReviewSubmitted }: OrderItemProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const [activeRateProductId, setActiveRateProductId] = useState<string | null>(null);
-
-  // Redux rating slice
-  const ratings = useSelector((state: any) => state.rating?.ratings || []);
 
   const isDelivered = order.status.toUpperCase() === 'DELIVERED';
 
@@ -52,9 +43,7 @@ export default function OrderItem({ order }: OrderItemProps) {
         <td className="py-6 pl-2 text-left">
           <div className="flex flex-col space-y-5">
             {order.orderItems.map((item, idx) => {
-              const ratingObject = ratings.find(
-                (r: any) => r.productId === item.product.id
-              );
+              const ratingObject = item.review;
 
               return (
                 <div key={item.product.id || idx} className="flex items-center space-x-3.5">
@@ -106,17 +95,13 @@ export default function OrderItem({ order }: OrderItemProps) {
         {/* Total Price Column */}
         <td className="py-6 text-center font-black text-slate-800 text-xs sm:text-sm max-md:hidden">
           {currency}
-          {order.total.toLocaleString()}
+          {order.totalAmount.toLocaleString()}
         </td>
 
         {/* Shipping Destination Column */}
         <td className="py-6 text-left leading-relaxed text-slate-450 font-semibold max-md:hidden">
-          <p className="font-extrabold text-slate-700">{order.address.name}</p>
-          <p className="truncate max-w-[180px]">{order.address.street}</p>
-          <p className="truncate max-w-[180px]">
-            {order.address.city}, {order.address.state} {order.address.zip}
-          </p>
-          <p className="text-[10px] font-bold text-slate-400 mt-1">{order.address.phone}</p>
+          <p className="font-extrabold text-slate-700">{order.orderNumber}</p>
+          <p className="truncate max-w-[180px]">{order.address}</p>
         </td>
 
         {/* Status Indicator Column */}
@@ -143,13 +128,10 @@ export default function OrderItem({ order }: OrderItemProps) {
             <span className="text-[9px] font-black uppercase text-slate-400 tracking-wider">
               Shipping coordinates
             </span>
-            <p className="font-bold text-slate-700">{order.address.name}</p>
-            <p>
-              {order.address.street}, {order.address.city}, {order.address.state} {order.address.zip}
-            </p>
-            <p className="text-[10px] text-slate-400 font-bold">{order.address.phone}</p>
+            <p className="font-bold text-slate-700">{order.orderNumber}</p>
+            <p>{order.address}</p>
             <div className="pt-2 flex items-center justify-between border-t border-slate-100 mt-2">
-              <span className="text-xs font-black text-slate-700">Total bill: {currency}{order.total}</span>
+              <span className="text-xs font-black text-slate-700">Total bill: {currency}{order.totalAmount}</span>
               <span
                 className={`px-3 py-0.5 text-[9px] font-black uppercase tracking-wider rounded-full ${
                   isDelivered ? 'text-emerald-700 bg-emerald-50' : 'text-amber-700 bg-amber-50'
@@ -174,6 +156,7 @@ export default function OrderItem({ order }: OrderItemProps) {
         <RatingModal
           productId={activeRateProductId}
           onClose={() => setActiveRateProductId(null)}
+          onSuccess={onReviewSubmitted}
         />
       )}
     </>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense, useTransition } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
@@ -12,6 +12,7 @@ import Counter from '@/components/Counter';
 import OrderSummary from '@/components/OrderSummary';
 import PageTitle from '@/components/PageTitle';
 import { deleteItemFromCart } from '@/lib/features/cart/cartSlice';
+import { getProductsByIds } from '@/app/actions/products';
 
 export default function CartPage() {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
@@ -20,29 +21,39 @@ export default function CartPage() {
 
   // Redux items
   const { cartItems } = useSelector((state: any) => state.cart || { cartItems: {} });
-  const productsList = useSelector((state: any) => state.product?.list || []);
 
   const [cartArray, setCartArray] = useState<any[]>([]);
   const [totalPrice, setTotalPrice] = useState(0);
+  const [isResolving, startTransition] = useTransition();
 
   useEffect(() => {
-    let subtotal = 0;
-    const resolvedCartItems: any[] = [];
+    const productIds = Object.keys(cartItems);
 
-    for (const [productId, quantity] of Object.entries(cartItems)) {
-      const matchedProduct = productsList.find((p: any) => p.id === productId);
-      if (matchedProduct) {
-        resolvedCartItems.push({
-          ...matchedProduct,
-          quantity,
-        });
-        subtotal += matchedProduct.price * (quantity as number);
-      }
+    if (productIds.length === 0) {
+      setCartArray([]);
+      setTotalPrice(0);
+      return;
     }
 
-    setCartArray(resolvedCartItems);
-    setTotalPrice(subtotal);
-  }, [cartItems, productsList]);
+    startTransition(async () => {
+      const result = await getProductsByIds(productIds);
+      const products = result.success ? result.products : [];
+
+      let subtotal = 0;
+      const resolvedCartItems: any[] = [];
+
+      for (const product of products) {
+        const quantity = cartItems[product.id];
+        if (quantity) {
+          resolvedCartItems.push({ ...product, quantity });
+          subtotal += product.price * (quantity as number);
+        }
+      }
+
+      setCartArray(resolvedCartItems);
+      setTotalPrice(subtotal);
+    });
+  }, [cartItems]);
 
   const handleDeleteItem = (productId: string) => {
     dispatch(deleteItemFromCart({ productId }));
@@ -56,7 +67,14 @@ export default function CartPage() {
       </Suspense>
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {cartArray.length > 0 ? (
+        {isResolving && cartArray.length === 0 && Object.keys(cartItems).length > 0 ? (
+          <div className="flex flex-col justify-center items-center py-24 space-y-4">
+            <RefreshCw className="w-8 h-8 text-indigo-650 animate-spin" />
+            <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+              Loading Your Cart...
+            </p>
+          </div>
+        ) : cartArray.length > 0 ? (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Title heading */}
             <PageTitle

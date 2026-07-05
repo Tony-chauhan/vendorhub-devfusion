@@ -2,12 +2,11 @@
 
 import React, { useState } from 'react';
 import { Plus, CheckSquare, X, ShieldCheck, Ticket } from 'lucide-react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import AddressModal from './AddressModal';
 import { couponDummyData } from '@/assets/assets';
-import { clearCart } from '@/lib/features/cart/cartSlice';
 
 interface OrderSummaryProps {
   totalPrice: number;
@@ -17,13 +16,11 @@ interface OrderSummaryProps {
 export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const router = useRouter();
-  const dispatch = useDispatch();
 
   // Redux state
   const addressList = useSelector((state: any) => state.address?.list || []);
 
   // Component local states
-  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'STRIPE'>('COD');
   const [selectedAddress, setSelectedAddress] = useState<any>(null);
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [couponCodeInput, setCouponCodeInput] = useState('');
@@ -46,7 +43,7 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
     }
   };
 
-  const handlePlaceOrder = async (e: React.FormEvent) => {
+  const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!selectedAddress) {
@@ -54,61 +51,10 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
       return;
     }
 
-    if (paymentMethod === 'STRIPE') {
-      toast.success('Redirecting to secure Stripe payment sandbox...');
-      router.push('/checkout');
-      return;
-    }
-
-    // Save custom checkout order in localStorage so it appears in My Orders
-    const newOrder = {
-      id: `order_${Math.floor(100000 + Math.random() * 900000)}`,
-      total: parseFloat(finalPrice.toFixed(2)),
-      status: "PLACED",
-      createdAt: new Date().toISOString(),
-      address: selectedAddress,
-      orderItems: items.map((item) => ({
-        price: item.price,
-        quantity: item.quantity,
-        product: {
-          id: item.id,
-          name: item.name,
-          images: item.images,
-          category: item.category
-        }
-      })),
-      user: {
-        name: "Dharmender Chauhan"
-      }
-    };
-
-    if (typeof window !== 'undefined') {
-      const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
-      let localOrders: any[] = [];
-      if (savedOrdersStr) {
-        try {
-          localOrders = JSON.parse(savedOrdersStr);
-        } catch (err) {}
-      }
-      localOrders.unshift(newOrder);
-      localStorage.setItem('vendorhub_sandbox_orders', JSON.stringify(localOrders));
-    }
-
-    const placePromise = new Promise((resolve) => {
-      setTimeout(() => {
-        dispatch(clearCart());
-        resolve(true);
-      }, 1200);
-    });
-
-    toast.promise(placePromise, {
-      loading: 'Authorizing transaction with hyperlocal node...',
-      success: () => {
-        router.push('/orders');
-        return 'Order placed successfully! Happy shopping.';
-      },
-      error: 'Order validation failed. Try again.',
-    });
+    // The real checkout flow (shipping form, payment gateway, order creation)
+    // lives on /checkout — this panel only gates on having an address selected.
+    toast.success('Redirecting to secure checkout...');
+    router.push('/checkout');
   };
 
   // Discount Math
@@ -119,33 +65,14 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
     <div className="w-full max-w-lg lg:max-w-[350px] bg-white border border-slate-205 text-xs text-slate-500 rounded-3xl p-6 sm:p-8 shadow-md flex flex-col space-y-5 animate-in fade-in duration-300">
       <h2 className="text-base font-extrabold text-slate-800">Order Summary</h2>
 
-      {/* Payment Selector */}
+      {/* Payment Method Note */}
       <div className="space-y-2">
         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
           Payment Method
         </span>
-        <div className="space-y-2">
-          <label className="flex items-center space-x-3 cursor-pointer p-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-150 rounded-2xl transition-colors">
-            <input
-              type="radio"
-              name="payment"
-              onChange={() => setPaymentMethod('COD')}
-              checked={paymentMethod === 'COD'}
-              className="accent-indigo-650"
-            />
-            <span className="font-extrabold text-slate-700">Cash on Delivery (COD)</span>
-          </label>
-          <label className="flex items-center space-x-3 cursor-pointer p-2.5 bg-slate-50/50 hover:bg-slate-50 border border-slate-150 rounded-2xl transition-colors">
-            <input
-              type="radio"
-              name="payment"
-              onChange={() => setPaymentMethod('STRIPE')}
-              checked={paymentMethod === 'STRIPE'}
-              className="accent-indigo-650"
-            />
-            <span className="font-extrabold text-slate-700">Secure Stripe Payment</span>
-          </label>
-        </div>
+        <p className="text-[11px] text-slate-500 font-semibold bg-slate-50/50 border border-slate-150 rounded-2xl p-3">
+          Choose Razorpay or Cash on Delivery on the next step.
+        </p>
       </div>
 
       {/* Shipping Address Selector */}

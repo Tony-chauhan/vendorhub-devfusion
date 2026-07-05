@@ -1,31 +1,32 @@
 'use client';
 
-import React, { useEffect, useState, Suspense } from 'react';
-import { orderDummyData } from '@/assets/assets';
+import React, { useEffect, useState, Suspense, useCallback } from 'react';
+import { RefreshCw } from 'lucide-react';
 import Banner from '@/components/Banner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import PageTitle from '@/components/PageTitle';
 import OrderItem from '@/components/OrderItem';
+import { getMyOrders } from '@/app/actions/orders';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const loadOrders = useCallback(() => {
+    setLoading(true);
+    getMyOrders().then((result) => {
+      if (result.success) {
+        setOrders(result.orders);
+      }
+      setLoading(false);
+    });
+  }, []);
 
   useEffect(() => {
-    let localOrders: any[] = [];
-    if (typeof window !== 'undefined') {
-      const savedOrdersStr = localStorage.getItem('vendorhub_sandbox_orders');
-      if (savedOrdersStr) {
-        try {
-          localOrders = JSON.parse(savedOrdersStr);
-        } catch (e) {
-          console.error("Failed to parse saved orders from localStorage", e);
-        }
-      }
-    }
-    setOrders([...localOrders, ...orderDummyData]);
+    loadOrders();
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, []);
+  }, [loadOrders]);
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-50 text-slate-900">
@@ -35,7 +36,14 @@ export default function OrdersPage() {
       </Suspense>
 
       <main className="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {orders.length > 0 ? (
+        {loading ? (
+          <div className="flex flex-col justify-center items-center py-24 space-y-4">
+            <RefreshCw className="w-8 h-8 text-indigo-650 animate-spin" />
+            <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+              Loading Your Orders...
+            </p>
+          </div>
+        ) : orders.length > 0 ? (
           <div className="space-y-6 animate-in fade-in duration-300">
             <PageTitle
               heading="My Orders"
@@ -56,7 +64,7 @@ export default function OrdersPage() {
                 </thead>
                 <tbody>
                   {orders.map((order) => (
-                    <OrderItem key={order.id} order={order} />
+                    <OrderItem key={order.id} order={order} onReviewSubmitted={loadOrders} />
                   ))}
                 </tbody>
               </table>
