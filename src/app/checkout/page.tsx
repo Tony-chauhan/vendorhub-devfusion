@@ -1,28 +1,30 @@
 "use client";
 
-import React, { useState, useTransition, useEffect } from "react";
-import { 
-  CreditCard, 
-  MapPin, 
-  ShoppingBag, 
-  ArrowLeft, 
-  Sparkles, 
-  ShieldCheck, 
-  ChevronRight, 
-  Loader2, 
+import React, { useState, useTransition, useEffect, Suspense } from "react";
+import {
+  CreditCard,
+  MapPin,
+  ShoppingBag,
+  ArrowLeft,
+  Sparkles,
+  ShieldCheck,
+  ChevronRight,
+  Loader2,
   CheckCircle,
   Truck,
-  AlertTriangle
+  AlertTriangle,
+  Ticket
 } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import confetti from "canvas-confetti";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSelector, useDispatch } from "react-redux";
 import { createOrder, verifyRazorpayPayment } from "@/app/actions/orders";
 import { getProductsByIds } from "@/app/actions/products";
 import { clearCart } from "@/lib/features/cart/cartSlice";
+import { couponDummyData } from "@/assets/assets";
 
 declare global {
   interface Window {
@@ -30,13 +32,15 @@ declare global {
   }
 }
 
-export default function CheckoutPage() {
+function CheckoutContent() {
   const dispatch = useDispatch();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   // Navigation / Success states
   const [isSuccess, setIsSuccess] = useState(false);
   const [generatedOrderNum, setGeneratedOrderNum] = useState("");
+  const [placedOrderId, setPlacedOrderId] = useState("");
   const [isPending, startTransition] = useTransition();
 
   // Form input states
@@ -48,6 +52,12 @@ export default function CheckoutPage() {
   const [selectedGateway, setSelectedGateway] = useState<"razorpay" | "cod">("razorpay");
   const [formError, setFormError] = useState("");
   const [isProcessingSim, setIsProcessingSim] = useState(false);
+
+  // Coupon carried over from the cart page's Order Summary via ?coupon=CODE
+  const couponCode = searchParams.get("coupon") || "";
+  const appliedCoupon = couponCode
+    ? couponDummyData.find((c) => c.code.toLowerCase() === couponCode.toLowerCase()) || null
+    : null;
 
   // Redux items
   const { cartItems } = useSelector((state: any) => state.cart || { cartItems: {} });
@@ -101,7 +111,8 @@ export default function CheckoutPage() {
   const subtotal = resolvedCartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   const shipping = subtotal > 100 ? 0 : 15;
   const tax = parseFloat((subtotal * 0.08).toFixed(2)); // 8% local tax
-  const totalAmount = parseFloat((subtotal + shipping + tax).toFixed(2));
+  const discountAmount = appliedCoupon ? parseFloat(((appliedCoupon.discount / 100) * subtotal).toFixed(2)) : 0;
+  const totalAmount = parseFloat((subtotal + shipping + tax - discountAmount).toFixed(2));
 
   // Trigger celebration fireworks
   const triggerConfetti = () => {
@@ -137,6 +148,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    if (!/^\d{10}$/.test(phone)) {
+      setFormError("Enter a valid 10-digit mobile number.");
+      return;
+    }
+
     setIsProcessingSim(true);
 
     // Prepare full address string
@@ -146,6 +162,7 @@ export default function CheckoutPage() {
       const result = await createOrder({
         totalAmount,
         address: fullAddress,
+        phone,
         paymentMethod: selectedGateway,
         items: resolvedCartItems.map(item => ({
           productId: item.id,
@@ -157,10 +174,15 @@ export default function CheckoutPage() {
       if (!result.success) {
         setIsProcessingSim(false);
         setFormError(result.error || "Checkout was rejected by the server.");
+        // Online payments unavailable server-side: let the user retry with one click on COD.
+        if (selectedGateway === "razorpay" && result.error?.includes("Online payments are temporarily unavailable")) {
+          setSelectedGateway("cod");
+        }
         return;
       }
 
       setGeneratedOrderNum(result.orderNumber);
+      setPlacedOrderId(result.orderId);
 
       // COD (or mock-mode): order is placed immediately, no payment step.
       if (!result.requiresPayment) {
@@ -309,14 +331,12 @@ export default function CheckoutPage() {
             >
               Continue Shopping
             </Link>
-            <button
-              onClick={() => {
-                alert(`Hyperlocal real-time tracking dashboard is simulated. Order ID: ${generatedOrderNum}`);
-              }}
-              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/15 transition-all cursor-pointer"
+            <Link
+              href={placedOrderId && !placedOrderId.startsWith("mock_") ? `/orders/${placedOrderId}` : "/orders"}
+              className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg shadow-indigo-600/15 transition-all cursor-pointer text-center"
             >
               Track Package
-            </button>
+            </Link>
           </div>
         </motion.div>
       </div>
@@ -387,9 +407,11 @@ export default function CheckoutPage() {
                 <label className="text-xs font-bold text-slate-400 uppercase tracking-wider">Mobile Number</label>
                 <input
                   type="tel"
-                  placeholder="+91 9876543210"
+                  inputMode="numeric"
+                  pattern="[0-9]{10}"
+                  placeholder="9876543210"
                   value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
+                  onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 10))}
                   className="bg-slate-50 border border-slate-200 hover:border-slate-300 focus:border-indigo-500 rounded-xl py-3 px-4 text-sm text-slate-800 placeholder-slate-400 focus:outline-none transition-all font-semibold"
                 />
               </div>
@@ -570,6 +592,15 @@ export default function CheckoutPage() {
               <span>Hyperlocal Delivery Fee:</span>
               <strong className="text-emerald-600 font-extrabold uppercase tracking-wide">Free</strong>
             </div>
+            {appliedCoupon && (
+              <div className="flex justify-between items-center text-indigo-600 font-semibold bg-indigo-50/50 border border-indigo-100 p-2.5 rounded-2xl">
+                <span className="flex items-center gap-1.5">
+                  <Ticket className="w-3.5 h-3.5 text-indigo-500" />
+                  Coupon ({appliedCoupon.code})
+                </span>
+                <span className="font-black text-indigo-700">-${discountAmount.toFixed(2)}</span>
+              </div>
+            )}
           </div>
 
           {/* Grand Total Box */}
@@ -584,5 +615,22 @@ export default function CheckoutPage() {
 
       </main>
     </div>
+  );
+}
+
+export default function CheckoutPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="w-full min-h-screen bg-slate-50 flex flex-col items-center justify-center gap-4">
+          <Loader2 className="h-8 w-8 text-indigo-600 animate-spin" />
+          <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
+            Loading Checkout...
+          </p>
+        </div>
+      }
+    >
+      <CheckoutContent />
+    </Suspense>
   );
 }

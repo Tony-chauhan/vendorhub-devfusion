@@ -42,9 +42,13 @@ const cartSlice = createSlice({
       state.cartItems = {};
       state.total = 0;
     },
+    hydrateCart: (state, action: PayloadAction<CartState>) => {
+      state.cartItems = action.payload.cartItems;
+      state.total = action.payload.total;
+    },
   },
 });
 
-export const { addToCart, removeFromCart, clearCart, deleteItemFromCart } = cartSlice.actions;
+export const { addToCart, removeFromCart, clearCart, deleteItemFromCart, hydrateCart } = cartSlice.actions;
 
 export default cartSlice.reducer;

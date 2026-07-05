@@ -20,6 +20,14 @@ export default function Navbar() {
   const [userRole, setUserRole] = useState<string>('BUYER');
   const [storeStatus, setStoreStatus] = useState<string | null>(null);
 
+  // The cart is hydrated from localStorage after mount (see StoreProvider), so its
+  // count can legitimately differ from the server-rendered 0. Only show the badge
+  // once mounted client-side to avoid a hydration mismatch on that first paint.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   useEffect(() => {
     if (!isSignedIn) {
       setUserRole('BUYER');
@@ -103,7 +111,7 @@ export default function Navbar() {
             <Link href="/cart" className="relative p-2.5 hover:bg-slate-100 rounded-full transition-colors group">
               <ShoppingCart className="w-5 h-5 text-slate-700 group-hover:text-indigo-600 transition-colors" />
               <AnimatePresence>
-                {cartCount > 0 && (
+                {mounted && cartCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}

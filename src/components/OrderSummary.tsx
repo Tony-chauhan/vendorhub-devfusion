@@ -1,11 +1,9 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Plus, CheckSquare, X, ShieldCheck, Ticket } from 'lucide-react';
-import { useSelector } from 'react-redux';
+import { ShieldCheck, Ticket, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import AddressModal from './AddressModal';
 import { couponDummyData } from '@/assets/assets';
 
 interface OrderSummaryProps {
@@ -17,12 +15,7 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const router = useRouter();
 
-  // Redux state
-  const addressList = useSelector((state: any) => state.address?.list || []);
-
   // Component local states
-  const [selectedAddress, setSelectedAddress] = useState<any>(null);
-  const [showAddressModal, setShowAddressModal] = useState(false);
   const [couponCodeInput, setCouponCodeInput] = useState('');
   const [coupon, setCoupon] = useState<any>(null);
 
@@ -46,15 +39,12 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
   const handlePlaceOrder = (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedAddress) {
-      toast.error('Please select or add a shipping destination first');
-      return;
-    }
-
     // The real checkout flow (shipping form, payment gateway, order creation)
-    // lives on /checkout — this panel only gates on having an address selected.
+    // lives on /checkout. Carry the applied coupon along so the discount stays
+    // consistent instead of resetting on the next page.
     toast.success('Redirecting to secure checkout...');
-    router.push('/checkout');
+    const query = coupon ? `?coupon=${encodeURIComponent(coupon.code)}` : '';
+    router.push(`/checkout${query}`);
   };
 
   // Discount Math
@@ -73,63 +63,6 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
         <p className="text-[11px] text-slate-500 font-semibold bg-slate-50/50 border border-slate-150 rounded-2xl p-3">
           Choose Razorpay or Cash on Delivery on the next step.
         </p>
-      </div>
-
-      {/* Shipping Address Selector */}
-      <div className="border-t border-slate-100 pt-4 space-y-2">
-        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
-          Shipping Address
-        </span>
-
-        {selectedAddress ? (
-          <div className="flex items-center justify-between p-3 bg-indigo-50/50 border border-indigo-100 rounded-2xl">
-            <div className="space-y-0.5">
-              <p className="font-extrabold text-indigo-950 truncate max-w-[180px]">
-                {selectedAddress.name}
-              </p>
-              <p className="text-[10px] text-indigo-700/80 truncate max-w-[200px]">
-                {selectedAddress.street}, {selectedAddress.city}, {selectedAddress.state} {selectedAddress.zip}
-              </p>
-            </div>
-            <button
-              onClick={() => setSelectedAddress(null)}
-              className="p-1.5 text-indigo-600 hover:bg-indigo-100 rounded-full transition-colors cursor-pointer"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {addressList.length > 0 ? (
-              <select
-                className="w-full p-3 text-xs bg-slate-50 border border-slate-200 rounded-2xl outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 transition-all font-semibold"
-                onChange={(e) => {
-                  const val = e.target.value;
-                  setSelectedAddress(val !== '' ? addressList[Number(val)] : null);
-                }}
-                defaultValue=""
-              >
-                <option value="">-- Choose Shipping Address --</option>
-                {addressList.map((addr: any, idx: number) => (
-                  <option key={addr.id || idx} value={idx}>
-                    {addr.name} ({addr.street}, {addr.city})
-                  </option>
-                ))}
-              </select>
-            ) : (
-              <p className="text-[10px] text-slate-400 font-semibold italic">
-                No delivery locations loaded. Add one to checkout.
-              </p>
-            )}
-            <button
-              onClick={() => setShowAddressModal(true)}
-              className="inline-flex items-center space-x-1.5 text-indigo-650 hover:underline font-bold cursor-pointer"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add New Shipping Address</span>
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Bill Breakdown */}
@@ -211,8 +144,6 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
           <span>Confirm & Place Order</span>
         </button>
       </div>
-
-      {showAddressModal && <AddressModal onClose={() => setShowAddressModal(false)} />}
     </div>
   );
 }

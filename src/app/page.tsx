@@ -4,6 +4,7 @@ import React, { Suspense } from 'react';
 import Banner from '@/components/Banner';
 import Navbar from '@/components/Navbar';
 import Hero from '@/components/Hero';
+import CategoriesMarquee from '@/components/CategoriesMarquee';
 import LatestProducts from '@/components/LatestProducts';
 import BestSelling from '@/components/BestSelling';
 import OurSpec from '@/components/OurSpec';
@@ -19,6 +20,7 @@ export default function Home() {
       </Suspense>
       <main className="flex-1">
         <Hero />
+        <CategoriesMarquee />
         <LatestProducts />
         <BestSelling />
         <OurSpec />

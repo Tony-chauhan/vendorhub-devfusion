@@ -2,7 +2,8 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
-import { Dot, ChevronRight } from 'lucide-react';
+import Link from 'next/link';
+import { Dot, ChevronRight, Truck } from 'lucide-react';
 import Rating from './Rating';
 import RatingModal from './RatingModal';
 
@@ -106,17 +107,26 @@ export default function OrderItem({ order, onReviewSubmitted }: OrderItemProps) 
 
         {/* Status Indicator Column */}
         <td className="py-6 text-center max-md:hidden">
-          <div
-            className={`inline-flex items-center space-x-1 rounded-full px-3 py-1 font-bold ${
-              isDelivered
-                ? 'text-emerald-700 bg-emerald-50 border border-emerald-100'
-                : 'text-amber-700 bg-amber-50 border border-amber-100'
-            }`}
-          >
-            <Dot className={`w-4 h-4 -ml-1 ${isDelivered ? 'text-emerald-500' : 'text-amber-500'}`} />
-            <span className="text-[10px] uppercase tracking-wider">
-              {order.status.split('_').join(' ').toLowerCase()}
-            </span>
+          <div className="flex flex-col items-center gap-1.5">
+            <div
+              className={`inline-flex items-center space-x-1 rounded-full px-3 py-1 font-bold ${
+                isDelivered
+                  ? 'text-emerald-700 bg-emerald-50 border border-emerald-100'
+                  : 'text-amber-700 bg-amber-50 border border-amber-100'
+              }`}
+            >
+              <Dot className={`w-4 h-4 -ml-1 ${isDelivered ? 'text-emerald-500' : 'text-amber-500'}`} />
+              <span className="text-[10px] uppercase tracking-wider">
+                {order.status.split('_').join(' ').toLowerCase()}
+              </span>
+            </div>
+            <Link
+              href={`/orders/${order.id}`}
+              className="inline-flex items-center space-x-1 text-indigo-650 hover:underline font-extrabold text-[10px] uppercase tracking-wider cursor-pointer"
+            >
+              <Truck className="w-3 h-3" />
+              <span>Track Order</span>
+            </Link>
           </div>
         </td>
       </tr>
@@ -140,6 +150,13 @@ export default function OrderItem({ order, onReviewSubmitted }: OrderItemProps) 
                 {order.status.replace(/_/g, ' ').toLowerCase()}
               </span>
             </div>
+            <Link
+              href={`/orders/${order.id}`}
+              className="inline-flex items-center space-x-1 text-indigo-650 hover:underline font-extrabold text-[10px] uppercase tracking-wider cursor-pointer mt-2"
+            >
+              <Truck className="w-3 h-3" />
+              <span>Track Order</span>
+            </Link>
           </div>
         </td>
       </tr>

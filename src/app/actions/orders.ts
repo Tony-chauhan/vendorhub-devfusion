@@ -26,6 +26,7 @@ interface OrderItemInput {
 interface CreateOrderInput {
   totalAmount: number;
   address: string;
+  phone: string;
   paymentMethod?: "razorpay" | "cod";
   items: OrderItemInput[];
 }
@@ -156,17 +157,26 @@ export async function createOrder(data: CreateOrderInput) {
     // 6. For online payments, create the Razorpay order the client will pay against.
     if (validData.paymentMethod === "razorpay") {
       if (isMockPayments()) {
+        // A real database order exists but Razorpay isn't configured server-side.
+        // Faking a "paid" response here would clear the customer's cart while the
+        // order silently stays PLACED/PENDING forever (never surfaced to vendors).
+        // Release the stock reservation and reject instead of pretending to succeed.
+        await prisma.$transaction(async (tx) => {
+          for (const item of validData.items) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: { stock: { increment: item.quantity } },
+            });
+          }
+          await tx.order.update({
+            where: { id: order.id },
+            data: { paymentStatus: "FAILED" },
+          });
+        });
+
         return {
-          success: true as const,
-          orderId: order.id,
-          orderNumber: order.orderNumber,
-          netAmount: order.netAmount,
-          requiresPayment: true as const,
-          razorpayOrderId: `mock_rzp_order_${Math.floor(100000 + Math.random() * 900000)}`,
-          razorpayKeyId: "mock_key_id",
-          amountPaise,
-          currency: "INR" as const,
-          mockPayment: true as const,
+          success: false as const,
+          error: "Online payments are temporarily unavailable. Please choose Cash on Delivery.",
         };
       }
 

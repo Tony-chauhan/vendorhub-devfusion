@@ -70,7 +70,7 @@ export const productDummyData = [
     {
         id: "prod_1",
         name: "Modern table lamp",
-        description: "Modern table lamp with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty. Enhance your audio experience with this earbuds. Indulge yourself in a world of pure sound with 50 hours of uninterrupted playtime. Equipped with the cutting-edge Zen Mode Tech ENC and BoomX Tech, prepare to be enthralled by a symphony of crystal-clear melodies.",
+        description: "Modern table lamp with a warm-white dimmable LED bulb and a fabric-wrapped shade that softens the glow for reading nooks and bedside tables. A touch-sensitive base cycles through three brightness levels, and the weighted ceramic foot keeps it steady on any surface.",
         mrp: 40,
         price: 29,
         images: ["https://images.unsplash.com/photo-1507473885765-e6ed057f782c?auto=format&fit=crop&w=600&q=80", product_img1, "https://images.unsplash.com/photo-1513506003901-1e6a229e2d15?auto=format&fit=crop&w=600&q=80"],
@@ -85,7 +85,7 @@ export const productDummyData = [
     {
         id: "prod_2",
         name: "Smart speaker gray",
-        description: "Smart speaker with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Compact smart speaker with 360° room-filling sound, built-in voice assistant support, and Wi-Fi plus Bluetooth 5.0 connectivity. Pair two units for stereo sound, or drop it into any smart home routine for hands-free music, timers, and weather updates.",
         mrp: 50,
         price: 29,
         images: [product_img2, "https://images.unsplash.com/photo-1589003077984-894e133dabab?auto=format&fit=crop&w=600&q=80"],
@@ -100,7 +100,7 @@ export const productDummyData = [
     {
         id: "prod_3",
         name: "Smart watch white",
-        description: "Smart watch with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Sleek smart watch with a 1.4-inch AMOLED touchscreen, continuous heart-rate and sleep tracking, and 7-day battery life on a single charge. Swim-proof to 50m with 100+ workout modes and instant call and message notifications on your wrist.",
         mrp: 60,
         price: 29,
         images: [product_img3, "https://images.unsplash.com/photo-1508685096489-7aacd43bd3b1?auto=format&fit=crop&w=600&q=80"],
@@ -115,7 +115,7 @@ export const productDummyData = [
     {
         id: "prod_4",
         name: "Wireless headphones",
-        description: "Wireless headphones with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Over-ear wireless headphones with 30-hour battery life, plush cushioned earcups, and crisp 40mm drivers tuned for balanced bass and treble. Quick-pair Bluetooth 5.2, foldable hinges for travel, and a built-in mic for clear calls.",
         mrp: 70,
         price: 29,
         images: [product_img4, "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=600&q=80"],
@@ -130,7 +130,7 @@ export const productDummyData = [
     {
         id: "prod_5",
         name: "Smart watch black",
-        description: "Smart watch with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Rugged smart watch in matte black with reinforced glass, an always-on display, and multi-GPS tracking for outdoor workouts. Tracks heart rate, blood oxygen, and stress levels around the clock, with 10-day battery life between charges.",
         mrp: 49,
         price: 29,
         images: ["https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&auto=format&fit=crop&q=60", product_img10],
@@ -145,7 +145,7 @@ export const productDummyData = [
     {
         id: "prod_6",
         name: "Security Camera",
-        description: "Security Camera with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "1080p security camera with night vision up to 30ft, two-way audio, and motion-activated alerts sent straight to your phone. Weatherproof housing for outdoor use, with local SD card storage plus optional cloud backup.",
         mrp: 59,
         price: 29,
         images: [product_img6, "https://images.unsplash.com/photo-1557597774-9d273605dfa9?auto=format&fit=crop&w=600&q=80"],
@@ -160,7 +160,7 @@ export const productDummyData = [
     {
         id: "prod_7",
         name: "Smart Pen for iPad",
-        description: "Smart Pen for iPad with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Precision smart pen for iPad with tilt sensitivity, palm rejection, and magnetic wireless charging. Zero perceptible lag for natural sketching, note-taking, and handwriting-to-text conversion in your favorite apps.",
         mrp: 89,
         price: 29,
         images: [product_img7],
@@ -175,7 +175,7 @@ export const productDummyData = [
     {
         id: "prod_8",
         name: "Home Theater",
-        description: "Home Theater with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "5.1-channel home theater system with a dedicated subwoofer for deep bass and crisp dialogue clarity. HDMI ARC and optical inputs make it a drop-in upgrade for any TV, with a compact soundbar that fits under most screens.",
         mrp: 99,
         price: 29,
         images: [product_img8, "https://images.unsplash.com/photo-1545454675-3531b543be5d?auto=format&fit=crop&w=600&q=80"],
@@ -190,7 +190,7 @@ export const productDummyData = [
     {
         id: "prod_9",
         name: "Apple Wireless Earbuds",
-        description: "Apple Wireless Earbuds with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "True wireless earbuds with active noise cancellation, adaptive EQ, and up to 24 hours of combined playtime with the charging case. Sweat-resistant design and one-tap pairing make them equally at home in the gym or the office.",
         mrp: 89,
         price: 29,
         images: [product_img9],
@@ -205,7 +205,7 @@ export const productDummyData = [
     {
         id: "prod_10",
         name: "Apple Smart Watch",
-        description: "Apple Smart Watch with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Premium smart watch with ECG monitoring, blood oxygen sensing, and an always-on Retina display. Seamlessly pairs with your phone for calls, messages, and fitness tracking, backed by 18-hour battery life.",
         mrp: 179,
         price: 29,
         images: [product_img10, "https://images.unsplash.com/photo-1546868871-7041f2a55e12?auto=format&fit=crop&w=600&q=80"],
@@ -220,7 +220,7 @@ export const productDummyData = [
     {
         id: "prod_11",
         name: "RGB Gaming Mouse",
-        description: "RGB Gaming Mouse with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "RGB gaming mouse with a 12,000 DPI optical sensor, 6 programmable buttons, and adjustable weight tuning for a personalized grip. Braided cable and PTFE feet glide smoothly across any mousepad during long gaming sessions.",
         mrp: 39,
         price: 29,
         images: [product_img11, "https://images.unsplash.com/photo-1615663245857-ac93bb7c39e7?auto=format&fit=crop&w=600&q=80"],
@@ -235,7 +235,7 @@ export const productDummyData = [
     {
         id: "prod_12",
         name: "Smart Home Cleaner",
-        description: "Smart Home Cleaner with a sleek design. It's perfect for any room. It's made of high-quality materials and comes with a lifetime warranty.",
+        description: "Robotic smart home cleaner with laser-guided mapping, 2700Pa suction, and app-controlled scheduling. Automatically avoids obstacles, returns to its dock to recharge, and can be controlled by voice through any major smart assistant.",
         mrp: 199,
         price: 29,
         images: [product_img12, "https://images.unsplash.com/photo-1589156280159-27698a70f29e?auto=format&fit=crop&w=600&q=80"],

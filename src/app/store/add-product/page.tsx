@@ -95,7 +95,7 @@ export default function StoreAddProduct() {
 
       const result = await addProduct({
         name: productInfo.name.trim(),
-        description: productInfo.description.trim() || productInfo.name.trim(),
+        description: productInfo.description.trim(),
         price: parseFloat(productInfo.price),
         stock: 10,
         category: productInfo.category,

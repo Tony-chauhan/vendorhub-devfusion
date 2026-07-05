@@ -29,6 +29,11 @@ const nonNegativeInt = z
 
 const safeUuid = z.string().uuid("Invalid ID format");
 
+const phoneNumber = z
+  .string()
+  .trim()
+  .regex(/^\d{10}$/, "Phone number must be exactly 10 digits");
+
 // ─── User Profile ───────────────────────────────────────────────
 export const updateProfileSchema = z.object({
   name: safeName,
@@ -49,7 +54,7 @@ export const registerVendorSchema = z.object({
 // ─── Product ────────────────────────────────────────────────────
 export const addProductSchema = z.object({
   name: safeName,
-  description: safeText.min(5, "Description must be at least 5 characters"),
+  description: safeText.min(40, "Description must be at least 40 characters — give buyers real detail"),
   price: positiveFloat,
   stock: nonNegativeInt,
   category: z
@@ -80,6 +85,7 @@ export const searchProductsSchema = z.object({
 export const createOrderSchema = z.object({
   totalAmount: positiveFloat,
   address: safeText.min(5, "Address must be at least 5 characters"),
+  phone: phoneNumber,
   paymentMethod: z.enum(["razorpay", "cod"]).default("cod"),
   items: z
     .array(
