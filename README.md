@@ -149,6 +149,13 @@ NEXT_PUBLIC_IMAGEKIT_URL_ENDPOINT="https://ik.imagekit.io/your_endpoint/"
 
 # Google Gemini AI API Configuration
 GEMINI_API_KEY="your_gemini_api_key"
+
+# Razorpay Payment Gateway (Test/Sandbox keys from dashboard.razorpay.com)
+# Without these, Razorpay/UPI checkout falls back to a simulated instant
+# success and no real payment gateway is contacted.
+NEXT_PUBLIC_RAZORPAY_KEY_ID="rzp_test_yourkey"
+RAZORPAY_KEY_SECRET="your_razorpay_key_secret"
+RAZORPAY_WEBHOOK_SECRET="your_razorpay_webhook_secret"
 ```
 
 ### 3. Deploy Database Schema

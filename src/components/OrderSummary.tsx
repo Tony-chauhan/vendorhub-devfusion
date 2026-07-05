@@ -47,9 +47,12 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
     router.push(`/checkout${query}`);
   };
 
-  // Discount Math
-  const discountAmount = coupon ? (coupon.discount / 100) * totalPrice : 0;
-  const finalPrice = totalPrice - discountAmount;
+  // Pricing math — mirrors /checkout's formula exactly so this total never
+  // changes once the user reaches the real checkout page.
+  const shipping = totalPrice > 100 ? 0 : 15;
+  const tax = parseFloat((totalPrice * 0.08).toFixed(2));
+  const discountAmount = coupon ? parseFloat(((coupon.discount / 100) * totalPrice).toFixed(2)) : 0;
+  const finalPrice = parseFloat((totalPrice + shipping + tax - discountAmount).toFixed(2));
 
   return (
     <div className="w-full max-w-lg lg:max-w-[350px] bg-white border border-slate-205 text-xs text-slate-500 rounded-3xl p-6 sm:p-8 shadow-md flex flex-col space-y-5 animate-in fade-in duration-300">
@@ -76,8 +79,23 @@ export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
         </div>
 
         <div className="flex justify-between items-center text-slate-400 font-semibold">
+          <span>Local Tax GST (8%)</span>
+          <span className="text-slate-800 font-black">
+            {currency}
+            {tax.toFixed(2)}
+          </span>
+        </div>
+
+        <div className="flex justify-between items-center text-slate-400 font-semibold">
           <span>Hyperlocal Delivery</span>
-          <span className="text-emerald-600 font-extrabold uppercase">FREE</span>
+          {shipping > 0 ? (
+            <span className="text-slate-800 font-black">
+              {currency}
+              {shipping.toFixed(2)}
+            </span>
+          ) : (
+            <span className="text-emerald-600 font-extrabold uppercase">FREE</span>
+          )}
         </div>
 
         {coupon && (

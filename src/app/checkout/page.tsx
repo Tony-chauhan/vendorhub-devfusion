@@ -590,7 +590,11 @@ function CheckoutContent() {
             </div>
             <div className="flex justify-between">
               <span>Hyperlocal Delivery Fee:</span>
-              <strong className="text-emerald-600 font-extrabold uppercase tracking-wide">Free</strong>
+              {shipping > 0 ? (
+                <strong className="text-slate-700 font-bold">${shipping.toFixed(2)}</strong>
+              ) : (
+                <strong className="text-emerald-600 font-extrabold uppercase tracking-wide">Free</strong>
+              )}
             </div>
             {appliedCoupon && (
               <div className="flex justify-between items-center text-indigo-600 font-semibold bg-indigo-50/50 border border-indigo-100 p-2.5 rounded-2xl">
