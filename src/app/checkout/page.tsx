@@ -13,7 +13,11 @@ import {
   CheckCircle,
   Truck,
   AlertTriangle,
-  Ticket
+  Ticket,
+  QrCode,
+  Smartphone,
+  X,
+  Zap
 } from "lucide-react";
 import Link from "next/link";
 import Script from "next/script";
@@ -52,6 +56,20 @@ function CheckoutContent() {
   const [selectedGateway, setSelectedGateway] = useState<"razorpay" | "cod">("razorpay");
   const [formError, setFormError] = useState("");
   const [isProcessingSim, setIsProcessingSim] = useState(false);
+
+  // Sandbox Modal states
+  const [showSandboxModal, setShowSandboxModal] = useState(false);
+  const [sandboxOrderDetails, setSandboxOrderDetails] = useState<any>(null);
+  const [sandboxTab, setSandboxTab] = useState<"card" | "upi">("card");
+  const [upiTab, setUpiTab] = useState<"id" | "qr">("id");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [cardHolderName, setCardHolderName] = useState("");
+  const [upiId, setUpiId] = useState("");
+  const [simulationOutcome, setSimulationOutcome] = useState<"success" | "failure">("success");
+  const [sandboxStep, setSandboxStep] = useState<"idle" | "connecting" | "authorizing" | "verifying" | "success" | "failure">("idle");
+  const [sandboxStepMessage, setSandboxStepMessage] = useState("");
 
   // Coupon carried over from the cart page's Order Summary via ?coupon=CODE
   const couponCode = searchParams.get("coupon") || "";
@@ -193,12 +211,13 @@ function CheckoutContent() {
         return;
       }
 
-      // Mock-mode Razorpay: simulate an instant successful payment without loading the widget.
+      // Mock-mode Razorpay: open sandbox modal to simulate payment gateway.
       if (result.mockPayment) {
         setIsProcessingSim(false);
-        dispatch(clearCart());
-        setIsSuccess(true);
-        triggerConfetti();
+        setSandboxOrderDetails(result);
+        setShowSandboxModal(true);
+        setSandboxStep("idle");
+        setSandboxStepMessage("Ready to simulate payment");
         return;
       }
 
@@ -246,6 +265,92 @@ function CheckoutContent() {
 
       razorpayCheckout.open();
     });
+  };
+
+  // Simulated payment gateway submissions
+  const handleSimulatePayment = async () => {
+    if (sandboxStep !== "idle" && sandboxStep !== "failure") return;
+
+    if (sandboxTab === "card") {
+      if (!cardHolderName.trim()) {
+        alert("Please enter Cardholder Name.");
+        return;
+      }
+      if (!cardNumber.replace(/\s/g, "")) {
+        alert("Please enter Card Number.");
+        return;
+      }
+      if (!cardExpiry) {
+        alert("Please enter Expiry Date.");
+        return;
+      }
+      if (!cardCvv) {
+        alert("Please enter CVV.");
+        return;
+      }
+    } else {
+      if (upiTab === "id" && !upiId.trim()) {
+        alert("Please enter UPI Address.");
+        return;
+      }
+    }
+
+    setSandboxStep("connecting");
+    setSandboxStepMessage("Establishing secure connection to bank servers...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setSandboxStep("authorizing");
+    setSandboxStepMessage("Authorizing transaction funds...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setSandboxStep("verifying");
+    setSandboxStepMessage("Verifying signature and generating receipt...");
+
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    if (simulationOutcome === "success") {
+      try {
+        const verification = await verifyRazorpayPayment({
+          orderId: sandboxOrderDetails.orderId,
+          razorpayOrderId: sandboxOrderDetails.razorpayOrderId,
+          razorpayPaymentId: "pay_mock_" + Math.random().toString(36).substring(2, 9),
+          razorpaySignature: "sig_mock_" + Math.random().toString(36).substring(2, 9),
+        });
+
+        if (verification.success) {
+          setSandboxStep("success");
+          setSandboxStepMessage("Payment Verified Successfully!");
+          await new Promise((resolve) => setTimeout(resolve, 800));
+          setShowSandboxModal(false);
+          dispatch(clearCart());
+          setIsSuccess(true);
+          // Trigger confetti
+          confetti({
+            particleCount: 150,
+            spread: 80,
+            origin: { y: 0.6 }
+          });
+        } else {
+          setSandboxStep("failure");
+          setSandboxStepMessage(verification.error || "Payment verification failed.");
+        }
+      } catch (err: any) {
+        setSandboxStep("failure");
+        setSandboxStepMessage(err.message || "Connection timed out.");
+      }
+    } else {
+      setSandboxStep("failure");
+      setSandboxStepMessage("Transaction declined by card issuer.");
+    }
+  };
+
+  const handleCancelSandbox = () => {
+    const errorMsg = sandboxStep === "failure" 
+      ? `Sandbox Payment Failed: ${sandboxStepMessage}`
+      : "Payment was cancelled before it completed.";
+    setShowSandboxModal(false);
+    setSandboxStep("idle");
+    setFormError(errorMsg);
   };
 
   // Success view
@@ -618,6 +723,291 @@ function CheckoutContent() {
         </aside>
 
       </main>
+
+      <AnimatePresence>
+        {showSandboxModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Dark blur backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={handleCancelSandbox}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-md"
+            />
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              className="relative w-full max-w-lg bg-white/90 backdrop-blur-xl border border-slate-200/80 rounded-3xl shadow-2xl overflow-hidden flex flex-col z-10 text-slate-800"
+            >
+              {/* Top Banner / Badges */}
+              <div className="bg-gradient-to-r from-amber-500/10 via-yellow-500/5 to-transparent border-b border-amber-200/50 p-4.5 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2 w-2 rounded-full bg-amber-500 animate-ping" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 bg-amber-100/80 border border-amber-200/50 px-2 py-0.5 rounded-full">
+                    Sandbox Test Mode
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCancelSandbox}
+                  className="text-slate-400 hover:text-slate-600 transition-colors p-1 hover:bg-slate-100 rounded-full cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Main Content Area */}
+              <div className="p-6 sm:p-8 flex flex-col gap-6">
+                {/* Header */}
+                <div className="flex flex-col gap-1 text-center">
+                  <div className="mx-auto bg-indigo-50 p-3 rounded-2xl border border-indigo-100 text-indigo-600 mb-1">
+                    <ShieldCheck className="w-7 h-7" />
+                  </div>
+                  <h3 className="text-lg font-black text-slate-950">DevFusion Sandbox Checkout</h3>
+                  <p className="text-xs text-slate-400 font-semibold">
+                    Order Ref: {sandboxOrderDetails?.orderNumber} | Amount: ${(sandboxOrderDetails?.amountPaise / 100).toFixed(2)}
+                  </p>
+                </div>
+
+                {/* Show Loading Step Indicators if processing */}
+                {sandboxStep !== "idle" && sandboxStep !== "failure" ? (
+                  <div className="py-8 flex flex-col items-center justify-center gap-4 text-center">
+                    <div className="relative flex items-center justify-center">
+                      <div className="h-14 w-14 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin" />
+                      <div className="absolute text-indigo-600">
+                        {sandboxStep === "connecting" && <ShieldCheck className="w-5 h-5" />}
+                        {sandboxStep === "authorizing" && <CreditCard className="w-5 h-5" />}
+                        {sandboxStep === "verifying" && <Sparkles className="w-5 h-5" />}
+                        {sandboxStep === "success" && <CheckCircle className="w-5 h-5 text-emerald-600" />}
+                      </div>
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-widest">
+                        {sandboxStep === "connecting" && "Step 1: Connecting"}
+                        {sandboxStep === "authorizing" && "Step 2: Authorizing"}
+                        {sandboxStep === "verifying" && "Step 3: Verifying"}
+                        {sandboxStep === "success" && "Success"}
+                      </span>
+                      <p className="text-sm font-semibold text-slate-500">{sandboxStepMessage}</p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    {/* Failure alert if failed */}
+                    {sandboxStep === "failure" && (
+                      <div className="bg-rose-50 border border-rose-200 text-rose-800 p-4 rounded-2xl flex items-start gap-2.5">
+                        <AlertTriangle className="w-4.5 h-4.5 text-rose-600 shrink-0 mt-0.5" />
+                        <div className="text-xs">
+                          <strong className="font-bold">Transaction Failed:</strong>
+                          <p className="mt-0.5 text-rose-700/90 font-semibold">{sandboxStepMessage}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Payment Mode Tabs */}
+                    <div className="flex bg-slate-100/80 border border-slate-200/80 p-1 rounded-2xl">
+                      <button
+                        type="button"
+                        onClick={() => setSandboxTab("card")}
+                        className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          sandboxTab === "card"
+                            ? "bg-white text-indigo-950 shadow-sm border border-slate-200/40"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        <CreditCard className="w-3.5 h-3.5" /> Card Payment
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSandboxTab("upi")}
+                        className={`flex-1 py-2.5 text-xs font-black rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                          sandboxTab === "upi"
+                            ? "bg-white text-indigo-950 shadow-sm border border-slate-200/40"
+                            : "text-slate-500 hover:text-slate-700"
+                        }`}
+                      >
+                        <Smartphone className="w-3.5 h-3.5" /> UPI / QR
+                      </button>
+                    </div>
+
+                    {/* Tab Panels */}
+                    {sandboxTab === "card" ? (
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Cardholder Name</label>
+                          <input
+                            type="text"
+                            placeholder="Dharmender Chauhan"
+                            value={cardHolderName}
+                            onChange={(e) => setCardHolderName(e.target.value)}
+                            className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex flex-col gap-1.5">
+                          <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Card Number</label>
+                          <div className="relative">
+                            <input
+                              type="text"
+                              placeholder="4242 4242 4242 4242"
+                              value={cardNumber}
+                              onChange={(e) => setCardNumber(e.target.value)}
+                              className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 focus:outline-none w-full font-mono tracking-wider"
+                            />
+                            <CreditCard className="w-4.5 h-4.5 absolute right-3 top-2.5 text-slate-400" />
+                          </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Expiry Date</label>
+                            <input
+                              type="text"
+                              placeholder="12/28"
+                              value={cardExpiry}
+                              onChange={(e) => setCardExpiry(e.target.value)}
+                              className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
+                            />
+                          </div>
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">CVV Code</label>
+                            <input
+                              type="password"
+                              placeholder="123"
+                              maxLength={3}
+                              value={cardCvv}
+                              onChange={(e) => setCardCvv(e.target.value)}
+                              className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-4">
+                        {/* UPI sub tabs */}
+                        <div className="grid grid-cols-2 bg-slate-100 p-1 rounded-xl border border-slate-200/60">
+                          <button
+                            type="button"
+                            onClick={() => setUpiTab("id")}
+                            className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              upiTab === "id"
+                                ? "bg-white text-indigo-950 shadow-sm"
+                                : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            UPI ID / VPA
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setUpiTab("qr")}
+                            className={`py-2 text-[10px] font-bold rounded-lg transition-all cursor-pointer ${
+                              upiTab === "qr"
+                                ? "bg-white text-indigo-950 shadow-sm"
+                                : "text-slate-500 hover:text-slate-700"
+                            }`}
+                          >
+                            Scan QR Code
+                          </button>
+                        </div>
+
+                        {upiTab === "id" ? (
+                          <div className="flex flex-col gap-1.5">
+                            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">UPI Address</label>
+                            <input
+                              type="text"
+                              placeholder="success@razorpay"
+                              value={upiId}
+                              onChange={(e) => setUpiId(e.target.value)}
+                              className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none w-full font-mono"
+                            />
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-4 bg-slate-50 border border-slate-200/80 rounded-2xl gap-3">
+                            <div className="w-32 h-32 bg-white border border-slate-200 p-2 rounded-xl shadow-md flex items-center justify-center relative overflow-hidden">
+                              {/* QR Box simulation */}
+                              <div className="grid grid-cols-4 gap-1.5 w-full h-full opacity-60">
+                                {Array.from({ length: 16 }).map((_, i) => (
+                                  <div
+                                    key={i}
+                                    className={`rounded-sm ${(i === 0 || i === 3 || i === 12 || i === 15 || i === 5 || i === 10) ? 'bg-slate-900' : 'bg-slate-900/20'}`}
+                                  />
+                                ))}
+                              </div>
+                              {/* Glowing scan indicator */}
+                              <div className="absolute left-0 right-0 h-0.5 bg-indigo-500 top-1/2 -translate-y-1/2 animate-bounce opacity-80 shadow-md shadow-indigo-500" />
+                            </div>
+                            <span className="text-[9px] text-center text-slate-400 font-semibold max-w-xs">
+                              Scan code with any mock banking application to simulate transaction.
+                            </span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Autofill and Simulation Controls */}
+                    <div className="flex flex-col gap-3.5 p-4.5 bg-slate-50 border border-slate-200 rounded-2xl">
+                      <div className="flex items-center justify-between gap-4">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (sandboxTab === "card") {
+                              setCardHolderName(fullName || "Dharmender Chauhan");
+                              setCardNumber("4242 4242 4242 4242");
+                              setCardExpiry("12/28");
+                              setCardCvv("123");
+                            } else {
+                              setUpiId("success@razorpay");
+                            }
+                          }}
+                          className="text-[10px] font-black text-indigo-600 hover:text-indigo-800 transition-colors flex items-center gap-1 cursor-pointer"
+                        >
+                          <Zap className="w-3 h-3 text-indigo-500 fill-indigo-500" /> Autofill Sandbox Details
+                        </button>
+
+                        {/* Simulation Outcome select */}
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] text-slate-400 font-bold uppercase tracking-wider">Outcome:</span>
+                          <select
+                            value={simulationOutcome}
+                            onChange={(e: any) => setSimulationOutcome(e.target.value)}
+                            className="bg-white border border-slate-200 rounded-lg text-[10px] font-bold text-slate-700 py-1 px-2 focus:outline-none"
+                          >
+                            <option value="success">Success</option>
+                            <option value="failure">Failure</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="flex gap-3 mt-2">
+                      <button
+                        type="button"
+                        onClick={handleCancelSandbox}
+                        className="flex-1 bg-slate-100 hover:bg-slate-200/80 border border-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all cursor-pointer"
+                      >
+                        {sandboxStep === "failure" ? "Dismiss" : "Cancel Payment"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSimulatePayment}
+                        className="flex-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white text-xs font-extrabold py-3 rounded-xl shadow-lg shadow-indigo-600/15 hover:shadow-indigo-600/35 transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.01]"
+                      >
+                        Simulate Payment ➔
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
