@@ -353,6 +353,27 @@ function CheckoutContent() {
     setFormError(errorMsg);
   };
 
+  const handleCardNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const digitsOnly = e.target.value.replace(/\D/g, "");
+    const truncated = digitsOnly.substring(0, 16);
+    const formatted = truncated.match(/.{1,4}/g)?.join(" ") || truncated;
+    setCardNumber(formatted);
+  };
+
+  const handleExpiryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const clean = e.target.value.replace(/\D/g, "");
+    if (clean.length > 2) {
+      setCardExpiry(`${clean.slice(0, 2)}/${clean.slice(2, 4)}`);
+    } else {
+      setCardExpiry(clean);
+    }
+  };
+
+  const handleCvvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    setCardCvv(value.substring(0, 3));
+  };
+
   // Success view
   if (isSuccess) {
     return (
@@ -856,7 +877,7 @@ function CheckoutContent() {
                               type="text"
                               placeholder="4242 4242 4242 4242"
                               value={cardNumber}
-                              onChange={(e) => setCardNumber(e.target.value)}
+                              onChange={handleCardNumberChange}
                               className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 pl-3.5 pr-10 text-xs text-slate-800 focus:outline-none w-full font-mono tracking-wider"
                             />
                             <CreditCard className="w-4.5 h-4.5 absolute right-3 top-2.5 text-slate-400" />
@@ -870,7 +891,7 @@ function CheckoutContent() {
                               type="text"
                               placeholder="12/28"
                               value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
+                              onChange={handleExpiryChange}
                               className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
                             />
                           </div>
@@ -881,7 +902,7 @@ function CheckoutContent() {
                               placeholder="123"
                               maxLength={3}
                               value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value)}
+                              onChange={handleCvvChange}
                               className="bg-slate-50 border border-slate-200 focus:border-indigo-500 rounded-xl py-2.5 px-3.5 text-xs text-slate-800 focus:outline-none font-mono"
                             />
                           </div>
