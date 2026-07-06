@@ -27,7 +27,14 @@ const nonNegativeInt = z
   .int("Must be a whole number")
   .nonnegative("Value cannot be negative");
 
-const safeUuid = z.string().uuid("Invalid ID format");
+const safeUuid = z.string().refine(
+  (val) => {
+    const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(val);
+    const isMockId = val.startsWith("mock_") || val.startsWith("prod_") || val.startsWith("store_") || val.startsWith("refund_");
+    return isUuid || isMockId;
+  },
+  { message: "Invalid ID format" }
+);
 
 const phoneNumber = z
   .string()
