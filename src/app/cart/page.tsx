@@ -127,7 +127,7 @@ export default function CartPage() {
                         {/* Column 2: Quantity Counter */}
                         <td className="py-4 text-center">
                           <div className="inline-block scale-95">
-                            <Counter productId={item.id} />
+                            <Counter productId={item.id} maxStock={item.stock} />
                           </div>
                         </td>
 
