@@ -2,11 +2,11 @@
 
 import { useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useUser } from '@clerk/nextjs';
+import { useCustomUser } from '@/lib/clerk-client';
 import { setCart } from '@/lib/features/cart/cartSlice';
 
 export default function CartSync() {
-  const { user, isLoaded, isSignedIn } = useUser();
+  const { isLoaded, isSignedIn } = useCustomUser();
   const dispatch = useDispatch();
   const cart = useSelector((state: any) => state.cart);
   const isFirstRender = useRef(true);
