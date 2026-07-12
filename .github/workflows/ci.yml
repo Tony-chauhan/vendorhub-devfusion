@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder values so isMockDb()/isMockAuth()/isMockPayments() stay in
+      # mock mode during CI — no real database or third-party account needed
+      # to lint, typecheck, test, or build.
+      DATABASE_URL: "postgresql://mock:mockpassword@ep-mock-host.ap-southeast-1.aws.neon.tech/mock?sslmode=require"
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVhbXhkZXNpZ24tbW9jay1rZXk"
+      CLERK_SECRET_KEY: "sk_test_mock"
+      NEXT_PUBLIC_RAZORPAY_KEY_ID: "rzp_test_mock"
+      RAZORPAY_KEY_SECRET: "mock"
+      BANK_DETAILS_ENCRYPTION_KEY: "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE="
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Test
+        run: npm run test
+
+      - name: Build
+        run: npm run build
