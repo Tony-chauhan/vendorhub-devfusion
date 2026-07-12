@@ -7,15 +7,20 @@ import { Plus, Minus } from 'lucide-react';
 
 interface CounterProps {
   productId: string;
+  maxStock?: number;
 }
 
-export default function Counter({ productId }: CounterProps) {
+export default function Counter({ productId, maxStock }: CounterProps) {
   const cartItems = useSelector((state: any) => state.cart?.cartItems || {});
   const dispatch = useDispatch();
 
   const quantity = cartItems[productId] || 0;
 
   const handleIncrement = () => {
+    if (maxStock !== undefined && quantity >= maxStock) {
+      // Optional: Add a toast or alert here for max stock reached
+      return;
+    }
     dispatch(addToCart({ productId }));
   };
 
@@ -35,7 +40,8 @@ export default function Counter({ productId }: CounterProps) {
       <span className="w-6 text-center select-none text-slate-900 font-extrabold">{quantity}</span>
       <button
         onClick={handleIncrement}
-        className="p-1 hover:bg-slate-50 rounded-full transition-colors active:scale-90 cursor-pointer text-slate-500"
+        disabled={maxStock !== undefined && quantity >= maxStock}
+        className={`p-1 rounded-full transition-colors ${maxStock !== undefined && quantity >= maxStock ? 'opacity-30 cursor-not-allowed text-slate-400' : 'hover:bg-slate-50 active:scale-90 cursor-pointer text-slate-500'}`}
         aria-label="Increase quantity"
       >
         <Plus className="w-3.5 h-3.5" />
