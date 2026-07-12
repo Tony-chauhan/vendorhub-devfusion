@@ -1,34 +1,14 @@
 /**
- * Lightweight in-memory sliding-window rate limiter.
+ * Sliding-window rate limiter.
  *
- * Production deployments should swap this for a Redis-backed solution
- * (e.g. @upstash/ratelimit), but for Phase 1 this prevents obvious
- * abuse without adding external dependencies.
+ * Uses Upstash Redis (distributed — safe across multiple serverless
+ * instances/regions) when UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN are
+ * set. Otherwise falls back to an in-memory Map, which only rate-limits
+ * correctly within a single running instance.
  */
 
-interface RateLimitEntry {
-  timestamps: number[];
-}
-
-const store = new Map<string, RateLimitEntry>();
-
-// Cleanup stale entries every 5 minutes to avoid memory leaks
-const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
-let lastCleanup = Date.now();
-
-function cleanupStaleEntries(windowMs: number) {
-  const now = Date.now();
-  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
-  lastCleanup = now;
-
-  const cutoff = now - windowMs;
-  for (const [key, entry] of store) {
-    entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
-    if (entry.timestamps.length === 0) {
-      store.delete(key);
-    }
-  }
-}
+import { Ratelimit } from "@upstash/ratelimit";
+import { Redis } from "@upstash/redis";
 
 export interface RateLimitConfig {
   /** Maximum requests allowed within the window. */
@@ -43,24 +23,80 @@ export interface RateLimitResult {
   retryAfterMs: number;
 }
 
-/**
- * Checks whether a request from the given identifier is within the
- * configured rate limit. Returns the result without throwing.
- */
-export function checkRateLimit(
+// ─── Upstash-backed limiter (preferred) ─────────────────────────
+
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const useUpstash = Boolean(upstashUrl && upstashToken);
+
+if (useUpstash) {
+  console.info("[rate-limit] Upstash Redis configured — using distributed rate limiting.");
+} else {
+  console.warn(
+    "[rate-limit] UPSTASH_REDIS_REST_URL/UPSTASH_REDIS_REST_TOKEN not set — " +
+      "falling back to in-memory rate limiting. This is NOT safe across " +
+      "multiple serverless instances/regions; set Upstash credentials before going to production."
+  );
+}
+
+const redis = useUpstash ? new Redis({ url: upstashUrl!, token: upstashToken! }) : null;
+
+// Upstash's Ratelimit instance bakes in the window/limit, so cache one per
+// distinct config instead of constructing it on every call.
+const upstashLimiterCache = new Map<string, Ratelimit>();
+function getUpstashLimiter(config: RateLimitConfig): Ratelimit {
+  const cacheKey = `${config.maxRequests}:${config.windowMs}`;
+  let limiter = upstashLimiterCache.get(cacheKey);
+  if (!limiter) {
+    limiter = new Ratelimit({
+      redis: redis!,
+      limiter: Ratelimit.slidingWindow(config.maxRequests, `${config.windowMs} ms`),
+      analytics: false,
+      prefix: "vendorhub",
+    });
+    upstashLimiterCache.set(cacheKey, limiter);
+  }
+  return limiter;
+}
+
+// ─── In-memory fallback ──────────────────────────────────────────
+
+interface RateLimitEntry {
+  timestamps: number[];
+}
+
+const memoryStore = new Map<string, RateLimitEntry>();
+
+const CLEANUP_INTERVAL_MS = 5 * 60 * 1000;
+let lastCleanup = Date.now();
+
+function cleanupStaleEntries(windowMs: number) {
+  const now = Date.now();
+  if (now - lastCleanup < CLEANUP_INTERVAL_MS) return;
+  lastCleanup = now;
+
+  const cutoff = now - windowMs;
+  for (const [key, entry] of memoryStore) {
+    entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
+    if (entry.timestamps.length === 0) {
+      memoryStore.delete(key);
+    }
+  }
+}
+
+function checkRateLimitInMemory(
   identifier: string,
   config: RateLimitConfig
 ): RateLimitResult {
   const now = Date.now();
   cleanupStaleEntries(config.windowMs);
 
-  let entry = store.get(identifier);
+  let entry = memoryStore.get(identifier);
   if (!entry) {
     entry = { timestamps: [] };
-    store.set(identifier, entry);
+    memoryStore.set(identifier, entry);
   }
 
-  // Remove timestamps outside the current window
   const cutoff = now - config.windowMs;
   entry.timestamps = entry.timestamps.filter((t) => t > cutoff);
 
@@ -80,6 +116,35 @@ export function checkRateLimit(
     remaining: config.maxRequests - entry.timestamps.length,
     retryAfterMs: 0,
   };
+}
+
+// ─── Public API ───────────────────────────────────────────────────
+
+/**
+ * Checks whether a request from the given identifier is within the
+ * configured rate limit. Returns the result without throwing. Fails open to
+ * the in-memory limiter if Upstash is configured but unreachable, so a Redis
+ * outage degrades rate-limit precision rather than taking the app down.
+ */
+export async function checkRateLimit(
+  identifier: string,
+  config: RateLimitConfig
+): Promise<RateLimitResult> {
+  if (useUpstash) {
+    try {
+      const limiter = getUpstashLimiter(config);
+      const result = await limiter.limit(identifier);
+      return {
+        allowed: result.success,
+        remaining: result.remaining,
+        retryAfterMs: result.success ? 0 : Math.max(result.reset - Date.now(), 0),
+      };
+    } catch (error) {
+      console.error("[rate-limit] Upstash request failed, falling back to in-memory check:", error);
+      return checkRateLimitInMemory(identifier, config);
+    }
+  }
+  return checkRateLimitInMemory(identifier, config);
 }
 
 // ─── Pre-configured limiters ────────────────────────────────────

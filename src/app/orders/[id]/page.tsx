@@ -1,16 +1,20 @@
 import React from "react";
-import { 
-  ArrowLeft, 
-  MapPin, 
-  Package, 
-  Clock, 
-  Truck, 
-  CheckCircle2, 
+import {
+  ArrowLeft,
+  MapPin,
+  Package,
+  Clock,
+  Truck,
+  CheckCircle2,
   AlertTriangle,
   Store
 } from "lucide-react";
 import Link from "next/link";
+import { forbidden, unauthorized } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { customCurrentUser as currentUser } from "@/lib/clerk-server";
+import { isMockDb } from "@/lib/env";
+import RequestRefundButton from "@/components/RequestRefundButton";
 
 interface OrderTrackingProps {
   params: Promise<{ id: string }>;
@@ -27,6 +31,7 @@ export default async function OrderTrackingPage({ params }: OrderTrackingProps) 
       where: { id: orderId },
       include: {
         buyer: true,
+        refund: true,
         orderItems: {
           include: {
             product: {
@@ -40,6 +45,24 @@ export default async function OrderTrackingPage({ params }: OrderTrackingProps) 
     });
   } catch (error) {
     console.error("Order fetch error:", error);
+  }
+
+  // 1b. Ownership check — this page renders a buyer's name and delivery
+  // address, so it must never be reachable by guessing/enumerating another
+  // buyer's order ID. Skipped in mock-DB mode since there's no real
+  // multi-tenant data to leak there.
+  if (order && !isMockDb()) {
+    const clerkUser = await currentUser();
+    if (!clerkUser) unauthorized();
+
+    const viewer = await prisma.user.findUnique({
+      where: { clerkId: clerkUser.id },
+      select: { id: true, role: true },
+    });
+
+    if (!viewer || (viewer.role !== "ADMIN" && viewer.id !== order.buyerId)) {
+      forbidden();
+    }
   }
 
   // 2. Access Denied / Not Found View
@@ -220,6 +243,22 @@ export default async function OrderTrackingPage({ params }: OrderTrackingProps) 
                 </div>
               </div>
             </div>
+
+            {/* Refund request */}
+            {order.status === "DELIVERED" && (
+              <div className="bg-white border border-slate-200/80 p-6 rounded-3xl backdrop-blur-sm flex flex-col gap-4 shadow-sm">
+                <h3 className="font-extrabold text-sm text-slate-900 flex items-center gap-2 pb-2 border-b border-slate-200/80">
+                  Need Something Fixed?
+                </h3>
+                {order.refund ? (
+                  <div className="text-xs font-bold text-slate-500 bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+                    Refund request status: <span className="uppercase">{order.refund.status}</span>
+                  </div>
+                ) : (
+                  <RequestRefundButton orderId={order.id} />
+                )}
+              </div>
+            )}
           </aside>
         </div>
       </main>

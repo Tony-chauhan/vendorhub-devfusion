@@ -84,7 +84,7 @@ export default function Footer() {
         { text: "Home Storefront", path: "/" },
         { text: "Privacy Policy", path: "/privacy" },
         { text: "Plus Premium Pricing", path: "/pricing" },
-        { text: "Onboard Your Store", path: "/create-store" },
+        { text: "Onboard Your Store", path: "/vendor/register" },
       ]
     },
     {

@@ -18,7 +18,7 @@ export async function toggleWishlist(productId: string) {
       return { success: false as const, error: "Authentication required" };
     }
 
-    const rl = checkRateLimit(`wishlist:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`wishlist:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false as const, error: "Too many requests. Please try again shortly." };
     }

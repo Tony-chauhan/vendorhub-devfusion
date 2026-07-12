@@ -10,7 +10,7 @@ export async function GET() {
     const headerPayload = await headers();
     const clientIp = headerPayload.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
-    const rl = checkRateLimit(`imagekit:${clientIp}`, API_RATE_LIMIT);
+    const rl = await checkRateLimit(`imagekit:${clientIp}`, API_RATE_LIMIT);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Please try again later." },

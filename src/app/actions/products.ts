@@ -6,6 +6,7 @@ import { isMockDb } from "@/lib/env";
 import {
   addProductSchema,
   updateProductSchema,
+  productIdSchema,
   searchProductsSchema,
   formatZodError,
 } from "@/lib/validations";
@@ -47,6 +48,8 @@ export type SearchProductsInput = {
   maxPrice?: number;
   minRating?: number;
   sort?: "default" | "low-to-high" | "high-to-low" | "best" | "discount";
+  page?: number;
+  limit?: number;
 };
 
 function computeMrp(price: number) {
@@ -67,14 +70,14 @@ function mapDummyToCatalog(product: (typeof productDummyData)[number]): CatalogP
     price: product.price,
     mrp: product.mrp ?? computeMrp(product.price),
     stock: product.inStock ? 10 : 0,
-    images: product.images,
+    images: product.images.map((img: any) => typeof img === 'string' ? img : (img?.src || '')),
     category: product.category,
     location: product.store?.address ?? null,
     storeId: product.storeId,
     storeName: product.store?.name,
     avgRating,
     rating: ratings.map((r) => ({ rating: r.rating })),
-    inStock: product.inStock ?? product.stock > 0,
+    inStock: product.inStock ?? false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
@@ -169,19 +172,55 @@ export async function getVendorStoreForUser(clerkId: string) {
   return { user, store: user.store };
 }
 
-export async function searchProducts(rawFilters: SearchProductsInput = {}) {
+export interface SearchProductsResult {
+  success: true;
+  products: CatalogProduct[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+export interface SearchProductsError {
+  success: false;
+  error: string;
+  products: CatalogProduct[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+export async function searchProducts(
+  rawFilters: SearchProductsInput = {}
+): Promise<SearchProductsResult | SearchProductsError> {
   try {
     const parsed = searchProductsSchema.safeParse(rawFilters);
     if (!parsed.success) {
-      return { success: false as const, error: formatZodError(parsed.error), products: [] as CatalogProduct[] };
+      return {
+        success: false as const,
+        error: formatZodError(parsed.error),
+        products: [],
+        total: 0,
+        page: 1,
+        pageCount: 0,
+      };
     }
 
     const filters = parsed.data;
+    const { page, limit } = filters;
 
     if (isMockDb()) {
       const mockProducts = productDummyData.map(mapDummyToCatalog);
       const filtered = applySearchFilters(mockProducts, filters);
-      return { success: true as const, products: sortCatalogProducts(filtered, filters.sort) };
+      const sorted = sortCatalogProducts(filtered, filters.sort);
+      const total = sorted.length;
+      const start = (page - 1) * limit;
+      return {
+        success: true as const,
+        products: sorted.slice(start, start + limit),
+        total,
+        page,
+        pageCount: Math.max(1, Math.ceil(total / limit)),
+      };
     }
 
     const where: Record<string, unknown> = {
@@ -207,25 +246,74 @@ export async function searchProducts(rawFilters: SearchProductsInput = {}) {
       ];
     }
 
-    const rows = await prisma.product.findMany({
-      where,
-      include: {
-        reviews: { select: { rating: true } },
-        store: { select: { name: true } },
-      },
-      orderBy: { createdAt: "desc" },
-    });
+    // Average rating isn't a stored/indexed column (it's derived from the
+    // Review relation), so a minRating filter or a "best rated" sort can't be
+    // pushed into the DB query — fetch the filtered set, compute ratings,
+    // filter/sort in memory, then paginate that. Every other sort maps
+    // directly onto an indexed column (price/createdAt), so it stays a real
+    // DB-level query+count+skip+take with no full-table fetch.
+    const needsRatingComputation = filters.minRating !== undefined || filters.sort === "best";
 
-    let products = rows.map(mapDbToCatalog);
+    if (needsRatingComputation) {
+      const rows = await prisma.product.findMany({
+        where,
+        include: {
+          reviews: { select: { rating: true } },
+          store: { select: { name: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      });
 
-    if (filters.minRating !== undefined) {
-      products = products.filter((p) => p.avgRating >= filters.minRating!);
+      let products = rows.map(mapDbToCatalog);
+      if (filters.minRating !== undefined) {
+        products = products.filter((p) => p.avgRating >= filters.minRating!);
+      }
+      products = sortCatalogProducts(products, filters.sort);
+
+      const total = products.length;
+      const start = (page - 1) * limit;
+      return {
+        success: true as const,
+        products: products.slice(start, start + limit),
+        total,
+        page,
+        pageCount: Math.max(1, Math.ceil(total / limit)),
+      };
     }
 
-    return { success: true as const, products: sortCatalogProducts(products, filters.sort) };
+    // "discount" is monotonic in price here (mrp is always ~1.25x price, see
+    // computeMrp), so it maps onto the same indexed column as high-to-low.
+    const orderBy: Record<string, "asc" | "desc"> =
+      filters.sort === "low-to-high"
+        ? { price: "asc" }
+        : filters.sort === "high-to-low" || filters.sort === "discount"
+          ? { price: "desc" }
+          : { createdAt: "desc" };
+
+    const [total, rows] = await Promise.all([
+      prisma.product.count({ where }),
+      prisma.product.findMany({
+        where,
+        include: {
+          reviews: { select: { rating: true } },
+          store: { select: { name: true } },
+        },
+        orderBy,
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      success: true as const,
+      products: rows.map(mapDbToCatalog),
+      total,
+      page,
+      pageCount: Math.max(1, Math.ceil(total / limit)),
+    };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to search products";
-    return { success: false as const, error: message, products: [] as CatalogProduct[] };
+    return { success: false as const, error: message, products: [], total: 0, page: 1, pageCount: 0 };
   }
 }
 
@@ -425,7 +513,7 @@ export async function addProduct(data: AddProductInput) {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`product:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`product:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -488,9 +576,9 @@ export async function addProduct(data: AddProductInput) {
 
 export async function deleteProduct(productId: string) {
   try {
-    // Basic validation
-    if (!productId || typeof productId !== "string" || productId.trim().length === 0) {
-      return { success: false, error: "Invalid product ID" };
+    const parsed = productIdSchema.safeParse({ id: productId });
+    if (!parsed.success) {
+      return { success: false, error: formatZodError(parsed.error) };
     }
 
     // 1. Authenticate
@@ -500,7 +588,7 @@ export async function deleteProduct(productId: string) {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`del-product:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`del-product:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -516,7 +604,7 @@ export async function deleteProduct(productId: string) {
     }
 
     const deleted = await prisma.product.deleteMany({
-      where: { id: productId, storeId: vendor.store.id },
+      where: { id: parsed.data.id, storeId: vendor.store.id },
     });
 
     if (deleted.count === 0) {
@@ -551,7 +639,7 @@ export async function updateProduct(data: {
       return { success: false, error: "Authentication required" };
     }
 
-    const rl = checkRateLimit(`upd-product:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`upd-product:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -598,11 +686,137 @@ export async function updateProduct(data: {
   }
 }
 
-export async function toggleProductStock(productId: string) {
+export interface VendorReviewItem {
+  id: string;
+  rating: number;
+  review: string | null;
+  createdAt: string;
+  user: { name: string | null; image: null };
+  product: { id: string; name: string; category: string };
+}
+
+export async function getVendorAnalytics(): Promise<
+  | {
+      success: true;
+      analytics: {
+        totalProducts: number;
+        totalEarnings: number;
+        totalOrders: number;
+        outOfStockCount: number;
+        lowStockCount: number;
+      };
+      reviews: VendorReviewItem[];
+      recentOrders: Array<{ createdAt: string; total: number }>;
+    }
+  | { success: false; error: string }
+> {
   try {
     const clerkUser = await currentUser();
     if (!clerkUser) {
       return { success: false, error: "Authentication required" };
+    }
+
+    const rl = await checkRateLimit(`vendor-analytics:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false, error: "Too many requests. Please try again shortly." };
+    }
+
+    if (isMockDb()) {
+      return {
+        success: true,
+        analytics: { totalProducts: 6, totalEarnings: 4820, totalOrders: 18, outOfStockCount: 1, lowStockCount: 2 },
+        reviews: [],
+        recentOrders: [],
+      };
+    }
+
+    const vendor = await getVendorStoreForUser(clerkUser.id);
+    if (!vendor) {
+      return { success: false, error: "Vendor store not found" };
+    }
+
+    const [totalProducts, outOfStockCount, lowStockCount, orderItems, reviews] = await Promise.all([
+      prisma.product.count({ where: { storeId: vendor.store.id } }),
+      prisma.product.count({ where: { storeId: vendor.store.id, stock: 0 } }),
+      prisma.product.count({ where: { storeId: vendor.store.id, stock: { gt: 0, lte: 3 } } }),
+      prisma.orderItem.findMany({
+        where: {
+          product: { storeId: vendor.store.id },
+          order: {
+            OR: [
+              { paymentGateway: "COD" },
+              { paymentGateway: "RAZORPAY", paymentStatus: "PAID" },
+            ],
+          },
+        },
+        select: { price: true, quantity: true, orderId: true, order: { select: { createdAt: true, totalAmount: true } } },
+      }),
+      prisma.review.findMany({
+        where: { product: { storeId: vendor.store.id } },
+        include: {
+          buyer: { select: { name: true } },
+          product: { select: { id: true, name: true, category: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+    ]);
+
+    const totalEarnings = parseFloat(
+      orderItems.reduce((sum, oi) => sum + oi.price * oi.quantity, 0).toFixed(2)
+    );
+    const totalOrders = new Set(orderItems.map((oi) => oi.orderId)).size;
+
+    // Recent 30 days of orders for chart
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentOrdersMap = new Map<string, number>();
+    for (const oi of orderItems) {
+      if (oi.order.createdAt >= thirtyDaysAgo) {
+        const key = oi.orderId;
+        if (!recentOrdersMap.has(key)) {
+          recentOrdersMap.set(key, oi.order.totalAmount);
+        }
+      }
+    }
+    const recentOrders = Array.from(recentOrdersMap.entries())
+      .map(([, total]) => ({ createdAt: new Date().toISOString(), total }))
+      .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
+
+    return {
+      success: true,
+      analytics: { totalProducts, totalEarnings, totalOrders, outOfStockCount, lowStockCount },
+      recentOrders,
+      reviews: reviews.map((r) => ({
+        id: r.id,
+        rating: r.rating,
+        review: r.comment,
+        createdAt: r.createdAt.toISOString(),
+        user: { name: r.buyer.name, image: null },
+        product: { id: r.product.id, name: r.product.name, category: r.product.category },
+      })),
+    };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to load vendor analytics";
+    return { success: false, error: message };
+  }
+}
+
+export async function toggleProductStock(productId: string) {
+  try {
+    const parsed = productIdSchema.safeParse({ id: productId });
+    if (!parsed.success) {
+      return { success: false, error: formatZodError(parsed.error) };
+    }
+
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return { success: false, error: "Authentication required" };
+    }
+
+    const rl = await checkRateLimit(`toggle-stock:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false, error: "Too many requests. Please try again shortly." };
     }
 
     if (isMockDb()) {
@@ -615,7 +829,7 @@ export async function toggleProductStock(productId: string) {
     }
 
     const product = await prisma.product.findFirst({
-      where: { id: productId, storeId: vendor.store.id },
+      where: { id: parsed.data.id, storeId: vendor.store.id },
     });
 
     if (!product) {
@@ -624,7 +838,7 @@ export async function toggleProductStock(productId: string) {
 
     const nextStock = product.stock > 0 ? 0 : 10;
     const updated = await prisma.product.update({
-      where: { id: productId },
+      where: { id: parsed.data.id },
       data: { stock: nextStock },
       include: {
         reviews: { select: { rating: true } },

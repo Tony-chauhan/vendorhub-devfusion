@@ -4,7 +4,7 @@ import React from 'react';
 import { usePathname } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Home, ShieldAlert, Store, Percent, ArrowLeft } from 'lucide-react';
+import { Home, ShieldAlert, Store, Undo2, ScrollText, ArrowLeft } from 'lucide-react';
 import { assets } from '@/assets/assets';
 
 export default function AdminSidebar() {
@@ -12,9 +12,10 @@ export default function AdminSidebar() {
 
   const sidebarLinks = [
     { name: 'Dashboard', href: '/admin', icon: Home },
-    { name: 'Active Stores', href: '/admin/stores', icon: Store },
+    { name: 'All Stores', href: '/admin/stores', icon: Store },
     { name: 'Verify Merchant', href: '/admin/approve', icon: ShieldAlert },
-    { name: 'Moderate Coupons', href: '/admin/coupons', icon: Percent },
+    { name: 'Refund Requests', href: '/admin/refunds', icon: Undo2 },
+    { name: 'Audit Log', href: '/admin/audit-log', icon: ScrollText },
   ];
 
   return (

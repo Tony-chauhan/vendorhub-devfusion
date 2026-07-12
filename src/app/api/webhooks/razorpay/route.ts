@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { isMockDb } from "@/lib/env";
 import { checkRateLimit, WEBHOOK_RATE_LIMIT } from "@/lib/rate-limit";
+import { sendEmail, orderConfirmationEmail } from "@/lib/notifications/email";
 
 interface RazorpayWebhookPayload {
   event: string;
@@ -30,7 +31,7 @@ export async function POST(req: Request) {
   const headerPayload = await headers();
   const clientIp = headerPayload.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
-  const rl = checkRateLimit(`razorpay-webhook:${clientIp}`, WEBHOOK_RATE_LIMIT);
+  const rl = await checkRateLimit(`razorpay-webhook:${clientIp}`, WEBHOOK_RATE_LIMIT);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded" },
@@ -73,8 +74,10 @@ export async function POST(req: Request) {
     case "payment.captured": {
       if (payment?.order_id) {
         // Idempotent: only orders still PENDING get transitioned. A retried
-        // delivery of an already-processed event is a safe no-op.
-        await prisma.order.updateMany({
+        // delivery of an already-processed event is a safe no-op — the
+        // updateMany's where clause won't match a second time, so the
+        // notification below only fires on the transition that actually happened.
+        const updated = await prisma.order.updateMany({
           where: { razorpayOrderId: payment.order_id, paymentStatus: "PENDING" },
           data: {
             paymentStatus: "PAID",
@@ -82,6 +85,22 @@ export async function POST(req: Request) {
             status: "CONFIRMED",
           },
         });
+
+        if (updated.count > 0) {
+          const order = await prisma.order.findFirst({
+            where: { razorpayOrderId: payment.order_id },
+            include: { buyer: { select: { email: true } }, orderItems: true },
+          });
+
+          if (order?.buyer?.email) {
+            const { subject, html } = orderConfirmationEmail({
+              orderNumber: order.orderNumber,
+              totalAmount: order.totalAmount,
+              itemCount: order.orderItems.length,
+            });
+            await sendEmail({ to: order.buyer.email, subject, html });
+          }
+        }
       }
       break;
     }

@@ -35,7 +35,7 @@ export async function saveCart(items: Record<string, number>) {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`cart-save:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`cart-save:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -73,7 +73,7 @@ export async function loadCart(): Promise<
     }
 
     // Rate limit
-    const rl = checkRateLimit(`cart-load:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`cart-load:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests" };
     }

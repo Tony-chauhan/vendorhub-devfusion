@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { ArrowLeft, RefreshCw, Hourglass, ShieldAlert, XOctagon } from 'lucide-react';
 import StoreNavbar from './StoreNavbar';
 import StoreSidebar from './StoreSidebar';
-import { dummyStoreData } from '@/assets/assets';
 import { getCurrentUserRoleAndStore } from '@/app/actions/vendors';
 
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
@@ -21,18 +20,9 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       try {
         const res = await getCurrentUserRoleAndStore();
         if (res.success) {
-          let currentRole = res.role;
-          let currentStore = res.store;
-          let status = res.store?.status || null;
-
-          // Check if there is a local simulated store in localStorage
-          const mockStoreStr = localStorage.getItem("vendorhub_mock_store");
-          if (mockStoreStr) {
-            const mockStore = JSON.parse(mockStoreStr);
-            currentStore = mockStore;
-            currentRole = "VENDOR";
-            status = mockStore.status;
-          }
+          const currentRole = res.role;
+          const currentStore = res.store;
+          const status = res.store?.status || null;
 
           if (currentRole === "ADMIN") {
             setIsSeller(true);
@@ -86,27 +76,20 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
           <div className="w-full bg-indigo-50/80 border border-indigo-200/60 p-5 rounded-2xl flex flex-col gap-2 text-left text-xs">
             <h3 className="font-extrabold text-indigo-700 flex items-center gap-1.5">
-              <ShieldAlert className="h-4 w-4 text-indigo-550" /> Hackathon Judge Shortcut:
+              <ShieldAlert className="h-4 w-4 text-indigo-550" /> What happens next:
             </h3>
             <p className="text-slate-550 leading-relaxed font-semibold">
-              To approve this store instantly, sign in using the administrator email (<strong className="text-indigo-600">dharmenderchauhan802@gmail.com</strong>) and approve registrations in the Admin Console.
+              A platform administrator will review your store details, GST/PAN information, and bank
+              account before approving your application. You&apos;ll receive an email once a decision is made.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 w-full mt-2">
-            <Link 
-              href="/"
-              className="flex-1 bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all text-center"
-            >
-              Back to Market
-            </Link>
-            <Link 
-              href="/admin/approve"
-              className="flex-1 bg-indigo-650 hover:bg-indigo-705 text-white text-xs font-bold py-3 rounded-xl shadow-md transition-all text-center"
-            >
-              Open Admin Console
-            </Link>
-          </div>
+          <Link
+            href="/"
+            className="w-full bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-700 text-xs font-bold py-3 rounded-xl transition-all text-center"
+          >
+            Back to Market
+          </Link>
         </div>
       </div>
     ) : storeStatus === "REJECTED" ? (

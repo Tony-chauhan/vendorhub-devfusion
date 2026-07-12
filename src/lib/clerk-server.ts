@@ -35,6 +35,35 @@ export async function customCurrentUser() {
 }
 
 /**
+ * Syncs a user's authoritative DB role into Clerk's publicMetadata so
+ * proxy.ts can do a fast edge-level allow/redirect from `sessionClaims`
+ * without a DB round-trip. This is a UX optimization only — every server
+ * action re-checks the DB role independently and never trusts this claim for
+ * the actual authorization decision (see the Data Security guide's warning
+ * that Proxy coverage can silently drop for a given route).
+ *
+ * Requires a Clerk Dashboard session token customization exposing
+ * `metadata: "{{user.public_metadata}}"` for proxy.ts to see it; if that's
+ * not configured, this call still succeeds (metadata is stored) but the
+ * proxy fast-path simply won't see it and falls back to sign-in-only checks.
+ */
+export async function syncClerkRoleMetadata(
+  clerkId: string,
+  role: "BUYER" | "VENDOR" | "ADMIN"
+): Promise<void> {
+  if (IS_MOCK_AUTH) return;
+
+  try {
+    const client = await ClerkServer.clerkClient();
+    await client.users.updateUserMetadata(clerkId, {
+      publicMetadata: { role },
+    });
+  } catch (error) {
+    console.error("[clerk] Failed to sync role metadata for", clerkId, error);
+  }
+}
+
+/**
  * 🔒 Safe clerkMiddleware helper
  */
 export function customClerkMiddleware(callback?: any) {

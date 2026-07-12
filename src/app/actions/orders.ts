@@ -10,12 +10,14 @@ import {
   createOrderSchema,
   updateOrderStatusSchema,
   verifyRazorpayPaymentSchema,
+  requestRefundSchema,
   formatZodError,
 } from "@/lib/validations";
 import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 import { getVendorStoreForUser } from "@/app/actions/products";
-
-const STATUS_STEPS = ["PLACED", "CONFIRMED", "SHIPPED", "DELIVERED"] as const;
+import { sendEmail, orderConfirmationEmail } from "@/lib/notifications/email";
+import { calculateNetAmount, DEFAULT_COMMISSION_PERCENT } from "@/lib/commission";
+import { checkStatusTransition } from "@/lib/order-status";
 
 interface OrderItemInput {
   productId: string;
@@ -46,7 +48,7 @@ export async function createOrder(data: CreateOrderInput) {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`order:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`order:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false as const, error: "Too many requests. Please try again shortly." };
     }
@@ -92,10 +94,26 @@ export async function createOrder(data: CreateOrderInput) {
       return { success: false as const, error: "User profile not found in marketplace database" };
     }
 
-    // 3. Formulate order number and calculate net amount after platform commission deduction
+    // 3. Formulate order number and calculate net amount after platform commission
+    // deduction. Each line item's own store may have a custom commission rate
+    // (Store.commission), so this can't be a single flat percentage off the
+    // order total when the cart spans multiple vendors.
     const orderNumber = `VNH-${Math.floor(100000 + Math.random() * 900000)}`;
-    const netAmount = parseFloat((validData.totalAmount * 0.9).toFixed(2)); // Default 10% platform commission
     const gateway = validData.paymentMethod === "razorpay" ? "RAZORPAY" : "COD";
+
+    const productsInCart = await prisma.product.findMany({
+      where: { id: { in: validData.items.map((item) => item.productId) } },
+      select: { id: true, store: { select: { commission: true } } },
+    });
+    const commissionByProductId = new Map(productsInCart.map((p) => [p.id, p.store.commission]));
+
+    const netAmount = calculateNetAmount(
+      validData.items.map((item) => ({
+        price: item.price,
+        quantity: item.quantity,
+        commissionPercent: commissionByProductId.get(item.productId) ?? DEFAULT_COMMISSION_PERCENT,
+      }))
+    );
 
     // 4. Insert order + orderItems and reserve stock atomically. Reserving stock
     // at creation (rather than waiting for payment confirmation) avoids charging
@@ -223,6 +241,18 @@ export async function createOrder(data: CreateOrderInput) {
       }
     }
 
+    // COD has no separate payment-confirmation step, so send the order
+    // confirmation immediately (Razorpay orders are confirmed from the
+    // webhook instead, once payment actually clears).
+    if (user.email) {
+      const { subject, html } = orderConfirmationEmail({
+        orderNumber: order.orderNumber,
+        totalAmount: order.totalAmount,
+        itemCount: order.orderItems.length,
+      });
+      await sendEmail({ to: user.email, subject, html });
+    }
+
     return {
       success: true as const,
       orderId: order.id,
@@ -301,7 +331,7 @@ export async function updateOrderStatus(orderId: string, status: "CONFIRMED" | "
       return { success: false as const, error: "Authentication required" };
     }
 
-    const rl = checkRateLimit(`vendor-order:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`vendor-order:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false as const, error: "Too many requests. Please try again shortly." };
     }
@@ -333,11 +363,9 @@ export async function updateOrderStatus(orderId: string, status: "CONFIRMED" | "
       return { success: false as const, error: "Order not found" };
     }
 
-    const currentIndex = STATUS_STEPS.indexOf(existing.status as (typeof STATUS_STEPS)[number]);
-    const targetIndex = STATUS_STEPS.indexOf(status);
-
-    if (targetIndex <= currentIndex) {
-      return { success: false as const, error: `Cannot move status backward from ${existing.status} to ${status}` };
+    const transition = checkStatusTransition(existing.status, status);
+    if (!transition.allowed) {
+      return { success: false as const, error: transition.error! };
     }
 
     const order = await prisma.order.update({
@@ -396,6 +424,70 @@ export async function getVendorOrders() {
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "Failed to load vendor orders";
     return { success: false as const, error: message, orders: [] };
+  }
+}
+
+export async function requestRefund(orderId: string, reason: string) {
+  try {
+    const parsed = requestRefundSchema.safeParse({ orderId, reason });
+    if (!parsed.success) {
+      return { success: false as const, error: formatZodError(parsed.error) };
+    }
+
+    const clerkUser = await currentUser();
+    if (!clerkUser) {
+      return { success: false as const, error: "Authentication required" };
+    }
+
+    const rl = await checkRateLimit(`refund-request:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    if (!rl.allowed) {
+      return { success: false as const, error: "Too many requests. Please try again shortly." };
+    }
+
+    if (isMockDb()) {
+      return {
+        success: true as const,
+        refund: { id: `mock_refund_${Math.floor(100000 + Math.random() * 900000)}`, status: "PENDING" as const },
+      };
+    }
+
+    const user = await prisma.user.findUnique({ where: { clerkId: clerkUser.id }, select: { id: true } });
+    if (!user) {
+      return { success: false as const, error: "User profile not found" };
+    }
+
+    const order = await prisma.order.findFirst({
+      where: { id: parsed.data.orderId, buyerId: user.id },
+      include: { refund: true },
+    });
+
+    if (!order) {
+      return { success: false as const, error: "Order not found" };
+    }
+
+    if (order.status !== "DELIVERED") {
+      return { success: false as const, error: "Refunds can only be requested for delivered orders" };
+    }
+
+    if (order.refund) {
+      return {
+        success: false as const,
+        error: `A refund request already exists for this order (status: ${order.refund.status})`,
+      };
+    }
+
+    const refund = await prisma.refund.create({
+      data: {
+        orderId: order.id,
+        reason: parsed.data.reason,
+        status: "PENDING",
+      },
+    });
+
+    return { success: true as const, refund };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "Failed to submit refund request";
+    return { success: false as const, error: message };
   }
 }
 

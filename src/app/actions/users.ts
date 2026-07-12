@@ -45,7 +45,7 @@ export async function getCurrentUserProfile(): Promise<
     }
 
     // Rate limit by clerk user ID
-    const rl = checkRateLimit(`profile:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`profile:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -118,7 +118,7 @@ export async function updateUserProfile(data: { name: string }): Promise<
     }
 
     // Rate limit
-    const rl = checkRateLimit(`update:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`update:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }

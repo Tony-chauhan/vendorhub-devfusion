@@ -27,7 +27,7 @@ export async function POST(req: Request) {
   const headerPayload = await headers();
   const clientIp = headerPayload.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
 
-  const rl = checkRateLimit(`webhook:${clientIp}`, WEBHOOK_RATE_LIMIT);
+  const rl = await checkRateLimit(`webhook:${clientIp}`, WEBHOOK_RATE_LIMIT);
   if (!rl.allowed) {
     return NextResponse.json(
       { error: "Rate limit exceeded" },

@@ -5,6 +5,7 @@ import {
   clerkUserUpdated,
   clerkUserDeleted,
   checkLowStock,
+  scheduledPayouts,
 } from "@/lib/inngest/functions";
 
 // Create an API that serves zero-dependency HTTP endpoints to Inngest
@@ -15,5 +16,6 @@ export const { GET, POST, PUT } = serve({
     clerkUserUpdated,
     clerkUserDeleted,
     checkLowStock,
+    scheduledPayouts,
   ],
 });

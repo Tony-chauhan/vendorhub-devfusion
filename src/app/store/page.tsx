@@ -2,24 +2,78 @@
 
 import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, DollarSign, ListOrdered, Star, MessageSquare, ExternalLink } from 'lucide-react';
-import { dummyStoreDashboardData } from '@/assets/assets';
+import { motion } from 'framer-motion';
+import {
+  RefreshCw,
+  ShoppingBag,
+  DollarSign,
+  ListOrdered,
+  Star,
+  MessageSquare,
+  ExternalLink,
+  Package,
+  PlusCircle,
+  AlertTriangle,
+  BarChart3,
+} from 'lucide-react';
+import { getVendorAnalytics, type VendorReviewItem } from '@/app/actions/products';
+import OrdersAreaChart from '@/components/OrdersAreaChart';
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1,
+    y: 0,
+    transition: { delay: i * 0.06, duration: 0.35, ease: 'easeOut' as const },
+  }),
+};
 
 export default function StoreDashboard() {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const router = useRouter();
 
-  const [dashboardData, setDashboardData] = useState<any>({
+  const [loading, setLoading] = useState(true);
+  const [dashboardData, setDashboardData] = useState<{
+    totalProducts: number;
+    totalEarnings: number;
+    totalOrders: number;
+    outOfStockCount: number;
+    lowStockCount: number;
+    ratings: VendorReviewItem[];
+    recentOrders: Array<{ createdAt: string; total: number }>;
+  }>({
     totalProducts: 0,
     totalEarnings: 0,
     totalOrders: 0,
+    outOfStockCount: 0,
+    lowStockCount: 0,
     ratings: [],
+    recentOrders: [],
   });
 
   useEffect(() => {
-    setDashboardData(dummyStoreDashboardData);
+    getVendorAnalytics().then((res) => {
+      if (res.success) {
+        setDashboardData({
+          totalProducts: res.analytics.totalProducts,
+          totalEarnings: res.analytics.totalEarnings,
+          totalOrders: res.analytics.totalOrders,
+          outOfStockCount: res.analytics.outOfStockCount,
+          lowStockCount: res.analytics.lowStockCount,
+          ratings: res.reviews,
+          recentOrders: res.recentOrders,
+        });
+      }
+      setLoading(false);
+    });
   }, []);
+
+  const inStockCount = Math.max(0, dashboardData.totalProducts - dashboardData.outOfStockCount);
+  const inStockPercent = dashboardData.totalProducts > 0
+    ? Math.round((inStockCount / dashboardData.totalProducts) * 100)
+    : 100;
 
   const stats = [
     { title: 'Total Products', value: dashboardData.totalProducts, icon: ShoppingBag, color: 'text-indigo-600 bg-indigo-50 border-indigo-100' },
@@ -28,25 +82,38 @@ export default function StoreDashboard() {
     { title: 'Average Ratings', value: `${dashboardData.ratings.length} Reviews`, icon: Star, color: 'text-purple-600 bg-purple-50 border-purple-100' },
   ];
 
+  const quickActions = [
+    { label: 'View Orders', href: '/store/orders', icon: ListOrdered, desc: 'Manage incoming orders' },
+    { label: 'Manage Inventory', href: '/store/manage-product', icon: Package, desc: 'Edit products & stock' },
+    { label: 'Add Product', href: '/store/add-product', icon: PlusCircle, desc: 'List a new product' },
+  ];
+
   return (
     <div className="space-y-8 pb-16">
       {/* Title */}
-      <div>
+      <div className="flex items-center justify-between">
+        <div>
         <h1 className="text-xl sm:text-2xl font-extrabold text-slate-800 tracking-tight">
           Merchant Workspace Overview
         </h1>
         <p className="text-xs text-slate-400 font-semibold mt-0.5">
           Real-time analytics and customer feedback stream for your storefront
         </p>
+        </div>
+        {loading && <RefreshCw className="w-5 h-5 text-indigo-600 animate-spin" />}
       </div>
 
       {/* Grid of stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {stats.map((stat) => {
+        {stats.map((stat, i) => {
           const CardIcon = stat.icon;
           return (
-            <div
+            <motion.div
               key={stat.title}
+              custom={i}
+              initial="hidden"
+              animate="visible"
+              variants={cardVariants}
               className="bg-white border border-slate-200/60 rounded-3xl p-5 sm:p-6 shadow-sm flex items-center justify-between group hover:shadow-md transition-shadow duration-300"
             >
               <div className="space-y-1.5">
@@ -60,10 +127,106 @@ export default function StoreDashboard() {
               <div className={`w-11 h-11 rounded-2xl flex items-center justify-center border shadow-sm ${stat.color}`}>
                 <CardIcon className="w-5 h-5" />
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>
+
+      {/* Inventory Health + Quick Actions */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Inventory Health */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.35 }}
+          className="bg-white border border-slate-200/60 rounded-3xl p-5 sm:p-6 shadow-sm"
+        >
+          <h2 className="text-sm font-extrabold text-slate-800 uppercase tracking-widest flex items-center gap-1.5 mb-5">
+            <BarChart3 className="w-4 h-4 text-indigo-500" />
+            <span>Inventory Health</span>
+          </h2>
+
+          {/* Circular progress ring */}
+          <div className="flex items-center gap-6">
+            <div className="relative w-20 h-20">
+              <svg className="w-20 h-20 transform -rotate-90" viewBox="0 0 80 80">
+                <circle cx="40" cy="40" r="34" stroke="#e2e8f0" strokeWidth="8" fill="none" />
+                <circle
+                  cx="40" cy="40" r="34"
+                  stroke={inStockPercent >= 70 ? '#10b981' : inStockPercent >= 40 ? '#f59e0b' : '#ef4444'}
+                  strokeWidth="8"
+                  fill="none"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(inStockPercent / 100) * 213.6} 213.6`}
+                />
+              </svg>
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-black text-slate-800">
+                {inStockPercent}%
+              </span>
+            </div>
+            <div className="space-y-2 text-xs">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span className="font-semibold text-slate-600">In Stock: {inStockCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                <span className="font-semibold text-slate-600">Low Stock: {dashboardData.lowStockCount}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                <span className="font-semibold text-slate-600">Out of Stock: {dashboardData.outOfStockCount}</span>
+              </div>
+            </div>
+          </div>
+
+          {dashboardData.lowStockCount > 0 && (
+            <div className="mt-4 px-3 py-2.5 bg-amber-50 border border-amber-200 rounded-xl flex items-center gap-2 text-[10px] font-bold text-amber-700">
+              <AlertTriangle className="w-3.5 h-3.5" />
+              {dashboardData.lowStockCount} product{dashboardData.lowStockCount > 1 ? 's' : ''} running low on stock
+            </div>
+          )}
+        </motion.div>
+
+        {/* Quick Actions */}
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4, duration: 0.35 }}
+          className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4"
+        >
+          {quickActions.map((action, i) => {
+            const ActionIcon = action.icon;
+            return (
+              <Link
+                key={action.label}
+                href={action.href}
+                className="bg-white border border-slate-200/60 rounded-3xl p-5 sm:p-6 shadow-sm hover:shadow-md transition-all duration-300 group flex flex-col items-start gap-3"
+              >
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center bg-indigo-50 border border-indigo-100 text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-colors duration-300">
+                  <ActionIcon className="w-5 h-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-extrabold text-slate-800">{action.label}</p>
+                  <p className="text-[10px] text-slate-400 font-semibold mt-0.5">{action.desc}</p>
+                </div>
+              </Link>
+            );
+          })}
+        </motion.div>
+      </div>
+
+      {/* Revenue Chart */}
+      {dashboardData.recentOrders.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.35 }}
+          className="max-w-4xl"
+        >
+          <OrdersAreaChart allOrders={dashboardData.recentOrders} />
+        </motion.div>
+      )}
 
       {/* Reviews feed */}
       <div className="space-y-4">
@@ -77,8 +240,11 @@ export default function StoreDashboard() {
             const averageStars = review.rating || 5;
 
             return (
-              <div
+              <motion.div
                 key={`${review.id || 'review'}-${idx}`}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + idx * 0.05, duration: 0.3 }}
                 className="bg-white border border-slate-200/60 rounded-3xl p-6 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
               >
                 <div className="flex items-start gap-4">
@@ -107,7 +273,7 @@ export default function StoreDashboard() {
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 leading-relaxed font-semibold max-w-lg">
-                      "{review.review}"
+                      &quot;{review.review}&quot;
                     </p>
                   </div>
                 </div>
@@ -143,7 +309,7 @@ export default function StoreDashboard() {
                     <ExternalLink className="w-3 h-3 text-slate-400" />
                   </button>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
         </div>

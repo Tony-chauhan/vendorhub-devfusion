@@ -18,7 +18,7 @@ export async function createReview(input: { productId: string; rating: number; c
       return { success: false as const, error: "Authentication required" };
     }
 
-    const rl = checkRateLimit(`review:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`review:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false as const, error: "Too many requests. Please try again shortly." };
     }

@@ -15,17 +15,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     const fetchAdminStatus = async () => {
       try {
         const res = await getCurrentUserRoleAndStore();
-        if (res.success && res.role === 'ADMIN') {
-          setIsAdmin(true);
-        } else {
-          // Fallback check for local simulated admin role
-          const mockUserRole = localStorage.getItem("vendorhub_mock_user_role");
-          if (mockUserRole === 'ADMIN') {
-            setIsAdmin(true);
-          } else {
-            setIsAdmin(false);
-          }
-        }
+        setIsAdmin(res.success && res.role === 'ADMIN');
       } catch (e) {
         setIsAdmin(false);
       } finally {

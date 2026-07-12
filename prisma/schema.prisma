@@ -45,6 +45,13 @@ enum PaymentGateway {
   COD
 }
 
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
 model User {
   id        String   @id @default(uuid())
   clerkId   String   @unique
@@ -75,8 +82,18 @@ model Store {
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
+  // Vendor trust & verification (Phase 3)
+  gstNumber          String?
+  panNumber          String?
+  bankAccountNumber  String?             // AES-256-GCM encrypted at rest, see src/lib/crypto.ts
+  bankIfsc           String?
+  verificationStatus VerificationStatus  @default(UNVERIFIED)
+  verificationNotes  String?
+
   products Product[]
   payouts  Payout[]
+
+  @@index([status])
 }
 
 model Product {
@@ -99,6 +116,13 @@ model Product {
   reviews      Review[]
   orderItems   OrderItem[]
   wishlistedBy User[]      @relation("UserWishlist")
+
+  @@index([category])
+  @@index([price])
+  @@index([createdAt])
+  @@index([storeId])
+  @@index([storeId, category])
+  @@index([name])
 }
 
 model Order {
@@ -122,6 +146,12 @@ model Order {
 
   orderItems OrderItem[]
   refund     Refund?
+
+  @@index([buyerId])
+  @@index([status])
+  @@index([buyerId, status])
+  @@index([createdAt])
+  @@index([paymentStatus])
 }
 
 model OrderItem {
@@ -134,6 +164,9 @@ model OrderItem {
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   review Review?
+
+  @@index([productId])
+  @@index([orderId])
 }
 
 model Review {
@@ -146,6 +179,8 @@ model Review {
   buyer     User     @relation(fields: [buyerId], references: [id])
   productId String
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 
   orderItemId String?    @unique
   orderItem   OrderItem? @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
@@ -171,4 +206,24 @@ model Payout {
 
   storeId   String
   store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId])
+  @@index([createdAt])
+}
+
+// Immutable trail of every admin-privileged mutation (store approval, refund
+// decisions, role changes, verification decisions, payouts). Never updated or
+// deleted after creation.
+model AdminAuditLog {
+  id           String   @id @default(uuid())
+  adminUserId  String
+  action       String   // e.g. "STORE_APPROVE", "REFUND_REJECT", "ROLE_CHANGE"
+  targetType   String   // e.g. "Store", "Refund", "User", "Payout"
+  targetId     String
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([adminUserId])
+  @@index([targetType, targetId])
+  @@index([createdAt])
 }

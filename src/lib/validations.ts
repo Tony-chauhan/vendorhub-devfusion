@@ -41,6 +41,33 @@ const phoneNumber = z
   .trim()
   .regex(/^\d{10}$/, "Phone number must be exactly 10 digits");
 
+// GSTIN: 2-digit state code + 10-char PAN + 1 entity code + 'Z' + 1 checksum
+const gstin = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/,
+    "Invalid GSTIN format"
+  );
+
+const pan = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, "Invalid PAN format");
+
+const bankAccountNumber = z
+  .string()
+  .trim()
+  .regex(/^\d{9,18}$/, "Bank account number must be 9-18 digits");
+
+const bankIfsc = z
+  .string()
+  .trim()
+  .toUpperCase()
+  .regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code");
+
 // ─── User Profile ───────────────────────────────────────────────
 export const updateProfileSchema = z.object({
   name: safeName,
@@ -56,6 +83,12 @@ export const registerVendorSchema = z.object({
     .trim()
     .min(1, "Location is required")
     .max(100, "Location must be under 100 characters"),
+  // GST is optional (small-seller exemption in India); PAN and bank payout
+  // details are required so vendors can actually be paid out.
+  gstNumber: gstin.optional().or(z.literal("")),
+  panNumber: pan,
+  bankAccountNumber: bankAccountNumber,
+  bankIfsc: bankIfsc,
 });
 
 // ─── Product ────────────────────────────────────────────────────
@@ -76,6 +109,10 @@ export const updateProductSchema = addProductSchema.partial().extend({
   id: safeUuid,
 });
 
+export const productIdSchema = z.object({
+  id: safeUuid,
+});
+
 export const searchProductsSchema = z.object({
   search: z.string().trim().max(120).optional(),
   category: z.string().trim().max(80).optional(),
@@ -86,6 +123,8 @@ export const searchProductsSchema = z.object({
     .enum(["default", "low-to-high", "high-to-low", "best", "discount"])
     .optional()
     .default("default"),
+  page: z.number().int().positive().optional().default(1),
+  limit: z.number().int().positive().max(100).optional().default(20),
 });
 
 // ─── Order ──────────────────────────────────────────────────────
@@ -112,6 +151,11 @@ export const verifyRazorpayPaymentSchema = z.object({
   razorpayOrderId: z.string().min(1, "Missing Razorpay order ID"),
   razorpayPaymentId: z.string().min(1, "Missing Razorpay payment ID"),
   razorpaySignature: z.string().min(1, "Missing Razorpay signature"),
+});
+
+export const requestRefundSchema = z.object({
+  orderId: safeUuid,
+  reason: safeText.min(10, "Please describe the issue in at least 10 characters"),
 });
 
 // ─── Wishlist ───────────────────────────────────────────────────
@@ -141,6 +185,21 @@ export const storeStatusSchema = z.object({
 export const processRefundSchema = z.object({
   refundId: safeUuid,
   status: z.enum(["APPROVED", "REJECTED"]),
+});
+
+export const setUserRoleSchema = z.object({
+  userId: safeUuid,
+  role: z.enum(["BUYER", "VENDOR", "ADMIN"]),
+});
+
+export const verifyStoreSchema = z.object({
+  storeId: safeUuid,
+  verificationStatus: z.enum(["VERIFIED", "REJECTED"]),
+  notes: safeText.max(500).optional().or(z.literal("")),
+});
+
+export const processPayoutSchema = z.object({
+  storeId: safeUuid,
 });
 
 // ─── Cart Persistence ───────────────────────────────────────────

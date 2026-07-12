@@ -3,7 +3,7 @@
 import React, { Suspense, useEffect, useState, useTransition, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, SlidersHorizontal, RefreshCw, Sparkles, ChevronRight, X, Star } from 'lucide-react';
+import { Search, SlidersHorizontal, RefreshCw, Sparkles, ChevronRight, X, Star, ChevronLeft } from 'lucide-react';
 import Banner from '@/components/Banner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -22,6 +22,7 @@ function ShopContent() {
   const minPriceParam = searchParams.get('minPrice') || '';
   const maxPriceParam = searchParams.get('maxPrice') || '';
   const minRatingParam = searchParams.get('minRating') || '';
+  const pageParam = Math.max(1, Number(searchParams.get('page') || '1') || 1);
 
   const [products, setProducts] = useState<CatalogProduct[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,8 @@ function ShopContent() {
   const [searchVal, setSearchVal] = useState(search);
   const [maxPrice, setMaxPrice] = useState(maxPriceParam ? Number(maxPriceParam) : 500);
   const [minRating, setMinRating] = useState(minRatingParam ? Number(minRatingParam) : 0);
+  const [total, setTotal] = useState(0);
+  const [pageCount, setPageCount] = useState(1);
 
   const fetchProducts = useCallback(() => {
     setLoading(true);
@@ -40,13 +43,15 @@ function ShopContent() {
       maxPrice: maxPriceParam ? Number(maxPriceParam) : undefined,
       minRating: minRatingParam ? Number(minRatingParam) : undefined,
       sort: sortParam as 'default' | 'low-to-high' | 'high-to-low' | 'best' | 'discount',
+      page: pageParam,
+      limit: 24,
     }).then((result) => {
-      if (result.success) {
-        setProducts(result.products);
-      }
+      setProducts(result.products);
+      setTotal(result.total);
+      setPageCount(result.pageCount);
       setLoading(false);
     });
-  }, [search, categoryParam, sortParam, minPriceParam, maxPriceParam, minRatingParam]);
+  }, [search, categoryParam, sortParam, minPriceParam, maxPriceParam, minRatingParam, pageParam]);
 
   useEffect(() => {
     fetchProducts();
@@ -86,7 +91,16 @@ function ShopContent() {
       if (value === null || value === '') nextParams.delete(key);
       else nextParams.set(key, value);
     });
+    // Any filter change resets pagination — a page number from the old
+    // result set is meaningless against the new filtered set.
+    if (!('page' in updates)) nextParams.delete('page');
     router.push(`/shop?${nextParams.toString()}`);
+  };
+
+  const goToPage = (nextPage: number) => {
+    if (nextPage < 1 || nextPage > pageCount || nextPage === pageParam) return;
+    pushParams({ page: String(nextPage) });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const selectCategory = (cat: string) => {
@@ -267,7 +281,11 @@ function ShopContent() {
               <div>
                 <h1 className="text-xl sm:text-2xl font-extrabold text-slate-900">Explore Our Catalog</h1>
                 <p className="text-xs text-slate-400 mt-1 font-semibold">
-                  {loading ? 'Searching inventory...' : `Found ${products.length} products`}
+                  {loading
+                    ? 'Searching inventory...'
+                    : total > 0
+                      ? `Found ${total} products — page ${pageParam} of ${pageCount}`
+                      : 'Found 0 products'}
                 </p>
               </div>
               {search && (
@@ -315,18 +333,44 @@ function ShopContent() {
                 </p>
               </div>
             ) : products.length > 0 ? (
-              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 mb-16">
-                {products.map((product) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, scale: 0.98 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <ProductCard product={product} />
-                  </motion.div>
-                ))}
-              </div>
+              <>
+                <div className={`grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 ${pageCount > 1 ? '' : 'mb-16'}`}>
+                  {products.map((product) => (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, scale: 0.98 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <ProductCard product={product} />
+                    </motion.div>
+                  ))}
+                </div>
+
+                {pageCount > 1 && (
+                  <div className="flex items-center justify-center gap-2 mb-16 pt-2">
+                    <button
+                      onClick={() => goToPage(pageParam - 1)}
+                      disabled={pageParam <= 1}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <span className="text-xs font-bold text-slate-600 px-3">
+                      Page {pageParam} of {pageCount}
+                    </span>
+                    <button
+                      onClick={() => goToPage(pageParam + 1)}
+                      disabled={pageParam >= pageCount}
+                      className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="bg-white border border-slate-200 rounded-3xl p-12 text-center flex flex-col items-center justify-center space-y-4 max-w-lg mx-auto my-12 shadow-sm">
                 <div className="w-12 h-12 bg-rose-50 rounded-2xl flex items-center justify-center text-rose-500 font-bold border border-rose-100">

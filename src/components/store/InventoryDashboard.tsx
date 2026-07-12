@@ -89,7 +89,7 @@ export default function InventoryDashboard() {
         setEditingProduct(null);
         loadProducts();
       } else {
-        toast.error(result.error);
+        toast.error(result.error || "Failed to update product");
       }
     });
   };

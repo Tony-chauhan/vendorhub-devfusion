@@ -1,16 +1,22 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { customCurrentUser as currentUser } from "@/lib/clerk-server";
+import { customCurrentUser as currentUser, syncClerkRoleMetadata } from "@/lib/clerk-server";
 import { isMockDb, ADMIN_EMAIL, resolveRole } from "@/lib/env";
 import { registerVendorSchema, formatZodError } from "@/lib/validations";
 import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
+import { encryptSensitive } from "@/lib/crypto";
+import { verifyGSTIN } from "@/lib/gst-verification";
 
 interface RegisterVendorInput {
   name: string;
   description: string;
   logo: string;
   location: string;
+  gstNumber?: string;
+  panNumber: string;
+  bankAccountNumber: string;
+  bankIfsc: string;
 }
 
 export async function registerVendor(data: RegisterVendorInput) {
@@ -28,7 +34,7 @@ export async function registerVendor(data: RegisterVendorInput) {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`vendor-reg:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`vendor-reg:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests. Please try again shortly." };
     }
@@ -37,11 +43,11 @@ export async function registerVendor(data: RegisterVendorInput) {
 
     if (isMockDb()) {
       console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating store registration.");
-      return { 
-        success: true, 
-        storeId: `mock_store_${Math.floor(100000 + Math.random() * 900000)}`, 
+      return {
+        success: true,
+        storeId: `mock_store_${Math.floor(100000 + Math.random() * 900000)}`,
         status: "APPROVED",
-        storeName: validData.name 
+        storeName: validData.name,
       };
     }
 
@@ -60,13 +66,25 @@ export async function registerVendor(data: RegisterVendorInput) {
     });
 
     if (existingStore) {
-      return { 
-        success: false, 
-        error: `You have already registered a store named '${existingStore.name}'. Status: ${existingStore.status}` 
+      return {
+        success: false,
+        error: `You have already registered a store named '${existingStore.name}'. Status: ${existingStore.status}`,
       };
     }
 
-    // 3. Create Store in PENDING status
+    // 3. GST verification (format-checked always; provider-checked when
+    // GST_VERIFICATION_API_URL/_API_KEY are configured — see lib/gst-verification.ts).
+    let verificationStatus: "UNVERIFIED" | "PENDING" | "VERIFIED" | "REJECTED" = "PENDING";
+    let verificationNotes: string | null = null;
+    if (validData.gstNumber) {
+      const gstResult = await verifyGSTIN(validData.gstNumber);
+      verificationStatus = gstResult.status;
+      verificationNotes = gstResult.message;
+    } else {
+      verificationNotes = "No GSTIN provided (small-seller exemption) — PAN on file, pending manual review.";
+    }
+
+    // 4. Create Store in PENDING status
     const store = await prisma.store.create({
       data: {
         name: validData.name,
@@ -75,24 +93,31 @@ export async function registerVendor(data: RegisterVendorInput) {
         location: validData.location,
         status: "PENDING", // Always PENDING initially, requires ADMIN approval
         vendorId: user.id,
+        gstNumber: validData.gstNumber || null,
+        panNumber: validData.panNumber,
+        bankAccountNumber: encryptSensitive(validData.bankAccountNumber),
+        bankIfsc: validData.bankIfsc,
+        verificationStatus,
+        verificationNotes,
       },
     });
 
-    // 4. Update database user role to VENDOR (grant dashboard visibility)
+    // 5. Update database user role to VENDOR (grant dashboard visibility) and
+    // mirror the role into Clerk metadata for the proxy fast-path.
     await prisma.user.update({
       where: { id: user.id },
       data: {
         role: "VENDOR",
       },
     });
+    await syncClerkRoleMetadata(clerkUser.id, "VENDOR");
 
-    return { 
-      success: true, 
-      storeId: store.id, 
+    return {
+      success: true,
+      storeId: store.id,
       status: store.status,
-      storeName: store.name 
+      storeName: store.name,
     };
-
   } catch (error: any) {
     console.error("Server Action RegisterVendor Error:", error);
     return { success: false, error: error.message || "Failed to submit vendor application" };
@@ -107,7 +132,7 @@ export async function getCurrentUserRoleAndStore() {
     }
 
     // Rate limit
-    const rl = checkRateLimit(`role-check:${clerkUser.id}`, ACTION_RATE_LIMIT);
+    const rl = await checkRateLimit(`role-check:${clerkUser.id}`, ACTION_RATE_LIMIT);
     if (!rl.allowed) {
       return { success: false, error: "Too many requests", role: "BUYER" as const, store: null };
     }
