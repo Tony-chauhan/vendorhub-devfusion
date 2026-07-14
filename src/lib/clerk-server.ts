@@ -1,5 +1,6 @@
 import * as ClerkServer from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
 import { isMockAuth, ADMIN_EMAIL } from "./env";
 
 export const IS_MOCK_AUTH = isMockAuth();
@@ -9,14 +10,30 @@ export const IS_MOCK_AUTH = isMockAuth();
  */
 export async function customCurrentUser() {
   if (IS_MOCK_AUTH) {
-    return {
-      id: "mock_clerk_id",
-      firstName: "Dharmender",
-      lastName: "Chauhan",
-      fullName: "Dharmender Chauhan",
-      emailAddresses: [{ emailAddress: "dharmenderchauhan802@gmail.com" }],
-      primaryEmailAddress: { emailAddress: "dharmenderchauhan802@gmail.com" },
-    };
+    const cookieStore = await cookies();
+    const role = cookieStore.get("mock_user_role")?.value;
+
+    if (role === "admin") {
+      return {
+        id: "mock_clerk_id_admin",
+        firstName: "Dharmender",
+        lastName: "Chauhan",
+        fullName: "Dharmender Chauhan",
+        emailAddresses: [{ emailAddress: "dharmenderchauhan802@gmail.com" }],
+        primaryEmailAddress: { emailAddress: "dharmenderchauhan802@gmail.com" },
+      };
+    } else if (role === "buyer") {
+      return {
+        id: "mock_clerk_id_buyer",
+        firstName: "Jane",
+        lastName: "Buyer",
+        fullName: "Jane Buyer",
+        emailAddresses: [{ emailAddress: "buyer@vendorhub.com" }],
+        primaryEmailAddress: { emailAddress: "buyer@vendorhub.com" },
+      };
+    }
+
+    return null; // Return null if not logged in
   }
 
   try {

@@ -7,15 +7,23 @@ import * as Clerk from "@clerk/nextjs";
 const clerkKey = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 export const IS_MOCK_AUTH = !clerkKey || clerkKey.includes("mock") || clerkKey.startsWith("pk_test_dGVhbXhkZXNpZ24");
 
+function getCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(";").shift() ?? null;
+  return null;
+}
+
 const MockUserContext = createContext({
-  isSignedIn: true,
+  isSignedIn: false,
   user: {
-    id: "mock_clerk_id",
-    firstName: "Dharmender",
-    lastName: "Chauhan",
-    fullName: "Dharmender Chauhan",
-    primaryEmailAddress: { emailAddress: "dharmenderchauhan802@gmail.com" },
-    emailAddresses: [{ emailAddress: "dharmenderchauhan802@gmail.com" }],
+    id: "",
+    firstName: "",
+    lastName: "",
+    fullName: "",
+    primaryEmailAddress: { emailAddress: "" },
+    emailAddresses: [] as Array<{ emailAddress: string }>,
   },
   isLoaded: true,
 });
@@ -26,19 +34,44 @@ const MockUserContext = createContext({
  */
 export function CustomClerkProvider({ children }: { children: React.ReactNode }) {
   if (IS_MOCK_AUTH) {
-    console.info("[VendorHub] Clerk is running in zero-config Local Evaluation Mode.");
+    const [signedInRole, setSignedInRole] = React.useState<string | null>(null);
+    const [isLoaded, setIsLoaded] = React.useState(false);
+
+    React.useEffect(() => {
+      setSignedInRole(getCookie("mock_user_role"));
+      setIsLoaded(true);
+    }, []);
+
+    console.info("[VendorHub] Clerk is running in zero-config Local Evaluation Mode. Role:", signedInRole);
+
+    const user = signedInRole === "admin" ? {
+      id: "mock_clerk_id_admin",
+      firstName: "Dharmender",
+      lastName: "Chauhan",
+      fullName: "Dharmender Chauhan",
+      primaryEmailAddress: { emailAddress: "dharmenderchauhan802@gmail.com" },
+      emailAddresses: [{ emailAddress: "dharmenderchauhan802@gmail.com" }],
+    } : signedInRole === "buyer" ? {
+      id: "mock_clerk_id_buyer",
+      firstName: "Jane",
+      lastName: "Buyer",
+      fullName: "Jane Buyer",
+      primaryEmailAddress: { emailAddress: "buyer@vendorhub.com" },
+      emailAddresses: [{ emailAddress: "buyer@vendorhub.com" }],
+    } : null;
+
     return (
       <MockUserContext.Provider
         value={{
-          isSignedIn: true,
-          isLoaded: true,
-          user: {
-            id: "mock_clerk_id",
-            firstName: "Dharmender",
-            lastName: "Chauhan",
-            fullName: "Dharmender Chauhan",
-            primaryEmailAddress: { emailAddress: "dharmenderchauhan802@gmail.com" },
-            emailAddresses: [{ emailAddress: "dharmenderchauhan802@gmail.com" }],
+          isSignedIn: !!signedInRole,
+          isLoaded,
+          user: user || {
+            id: "",
+            firstName: "",
+            lastName: "",
+            fullName: "",
+            primaryEmailAddress: { emailAddress: "" },
+            emailAddresses: [],
           },
         }}
       >
@@ -59,7 +92,7 @@ export function useCustomUser() {
     return {
       isSignedIn: mock.isSignedIn,
       isLoaded: mock.isLoaded,
-      user: mock.user,
+      user: mock.isSignedIn ? mock.user : null,
     };
   }
 
@@ -74,7 +107,10 @@ export function CustomSignOutButton({ children }: { children: React.ReactNode })
   if (IS_MOCK_AUTH) {
     return (
       <button
-        onClick={() => alert("Sign out simulated in zero-config evaluation mode!")}
+        onClick={() => {
+          document.cookie = "mock_user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
+          window.location.href = "/sign-in";
+        }}
         className="w-full h-full text-left"
       >
         {children}
