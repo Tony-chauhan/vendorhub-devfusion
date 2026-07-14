@@ -4,7 +4,7 @@ import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
 import { inngest } from "@/lib/inngest/client";
-import { isMockDb, isMockPayments } from "@/lib/env";
+import { isMockDb, isMockPayments, resolveRole } from "@/lib/env";
 import { razorpay } from "@/lib/razorpay";
 import {
   createOrderSchema,
@@ -85,13 +85,25 @@ export async function createOrder(data: CreateOrderInput) {
       };
     }
 
-    // 2. Fetch corresponding database user profile
-    const user = await prisma.user.findUnique({
+    // 2. Fetch or auto-create corresponding database user profile
+    let user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
     });
 
     if (!user) {
-      return { success: false as const, error: "User profile not found in marketplace database" };
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      if (!email) {
+        return { success: false as const, error: "No email address found on account" };
+      }
+      const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          name,
+          role: resolveRole(email),
+        },
+      });
     }
 
     // 3. Formulate order number and calculate net amount after platform commission
@@ -502,9 +514,21 @@ export async function getMyOrders() {
       return { success: true as const, orders: [] };
     }
 
-    const user = await prisma.user.findUnique({ where: { clerkId: clerkUser.id } });
+    let user = await prisma.user.findUnique({ where: { clerkId: clerkUser.id } });
     if (!user) {
-      return { success: false as const, error: "User profile not found", orders: [] };
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      if (!email) {
+        return { success: false as const, error: "No email address found on account", orders: [] };
+      }
+      const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          name,
+          role: resolveRole(email),
+        },
+      });
     }
 
     const orders = await prisma.order.findMany({

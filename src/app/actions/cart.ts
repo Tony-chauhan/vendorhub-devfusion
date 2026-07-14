@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
-import { isMockDb } from "@/lib/env";
+import { isMockDb, resolveRole } from "@/lib/env";
 import { syncCartSchema, formatZodError } from "@/lib/validations";
 import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 
@@ -45,11 +45,23 @@ export async function saveCart(items: Record<string, number>) {
       return { success: true, source: "mock" };
     }
 
-    // Persist cart as JSON in a dedicated field
-    // Note: This requires the `cartData` field on the User model (see schema update)
-    await prisma.user.update({
+    const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+    if (!email) {
+      return { success: false, error: "No email address found on account" };
+    }
+    const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+
+    // Persist cart as JSON in a dedicated field, automatically creating the user if missing.
+    await prisma.user.upsert({
       where: { clerkId: clerkUser.id },
-      data: {
+      update: {
+        cartData: JSON.stringify(parsed.data.items),
+      },
+      create: {
+        clerkId: clerkUser.id,
+        email,
+        name,
+        role: resolveRole(email),
         cartData: JSON.stringify(parsed.data.items),
       },
     });

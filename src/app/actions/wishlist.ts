@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
-import { isMockDb } from "@/lib/env";
+import { isMockDb, resolveRole } from "@/lib/env";
 import { toggleWishlistSchema, formatZodError } from "@/lib/validations";
 import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 
@@ -27,13 +27,26 @@ export async function toggleWishlist(productId: string) {
       return { success: true as const, wishlisted: true };
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
       select: { id: true },
     });
 
     if (!user) {
-      return { success: false as const, error: "User profile not found" };
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      if (!email) {
+        return { success: false as const, error: "No email address found on account" };
+      }
+      const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+      user = await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          name,
+          role: resolveRole(email),
+        },
+        select: { id: true },
+      });
     }
 
     const existing = await prisma.user.findFirst({
@@ -72,13 +85,26 @@ export async function getWishlistedProductIds() {
       return { success: true as const, productIds: [] as string[] };
     }
 
-    const user = await prisma.user.findUnique({
+    let user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
       select: { wishlist: { select: { id: true } } },
     });
 
     if (!user) {
-      return { success: false as const, error: "User profile not found", productIds: [] as string[] };
+      const email = clerkUser.emailAddresses?.[0]?.emailAddress;
+      if (!email) {
+        return { success: false as const, error: "No email address found on account", productIds: [] as string[] };
+      }
+      const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+      await prisma.user.create({
+        data: {
+          clerkId: clerkUser.id,
+          email,
+          name,
+          role: resolveRole(email),
+        },
+      });
+      return { success: true as const, productIds: [] };
     }
 
     return { success: true as const, productIds: user.wishlist.map((p) => p.id) };
