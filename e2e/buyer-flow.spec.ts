@@ -4,7 +4,7 @@ test.describe('Buyer Flow', () => {
   test('should allow buyer to add a product to cart and proceed to checkout', async ({ page }) => {
     // 1. Navigate to home
     await page.goto('/');
-    await expect(page).toHaveTitle(/Vendor Hub/i);
+    await expect(page).toHaveTitle(/VendorHub/i);
 
     // 2. Click on the first product's "View Details" or click the product card
     // Wait for products to load
