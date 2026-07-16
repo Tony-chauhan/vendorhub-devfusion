@@ -13,10 +13,8 @@ export default function StoreOrders() {
   const [isPending, startTransition] = useTransition();
   const [loading, setLoading] = useState(true);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [orders, setOrders] = useState<any[]>([]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+    const [orders, setOrders] = useState<any[]>([]);
+    const [selectedOrder, setSelectedOrder] = useState<any>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const loadOrders = () => {
@@ -51,14 +49,12 @@ export default function StoreOrders() {
       );
 
       if (selectedOrder && selectedOrder.id === orderId) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        setSelectedOrder((prev: any) => ({ ...prev, status: nextStatus }));
+                setSelectedOrder((prev: any) => ({ ...prev, status: nextStatus }));
       }
     });
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const openModal = (order: any) => {
+    const openModal = (order: any) => {
     setSelectedOrder(order);
     setIsModalOpen(true);
   };
@@ -233,8 +229,7 @@ export default function StoreOrders() {
                 Line Items Audit List
               </span>
               <div className="flex flex-col space-y-2.5 max-h-[160px] overflow-y-auto no-scrollbar">
-                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                {selectedOrder.orderItems.map((item: any, idx: number) => (
+                                {selectedOrder.orderItems.map((item: any, idx: number) => (
                   <div
                     key={item.id || idx}
                     className="flex items-center justify-between p-2.5 bg-white border border-slate-150 rounded-2xl"

@@ -109,9 +109,8 @@ export async function getPendingStores() {
     }));
 
     return { success: true, stores: withMaskedBank };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -137,9 +136,8 @@ export async function getAllStores() {
     }));
 
     return { success: true, stores: withMaskedBank };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message, stores: [] };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)), stores: [] };
   }
 }
 
@@ -182,9 +180,8 @@ export async function updateStoreStatus(storeId: string, status: "APPROVED" | "R
     }
 
     return { success: true, store };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -224,9 +221,8 @@ export async function verifyVendorStore(storeId: string, verificationStatus: "VE
     });
 
     return { success: true, store };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -352,9 +348,8 @@ export async function getAdminAnalytics() {
         totalUsers,
       },
     };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -382,9 +377,8 @@ export async function getRefundRequests() {
       orderBy: { createdAt: "desc" },
     });
     return { success: true, refunds };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -427,9 +421,8 @@ export async function processRefund(refundId: string, status: "APPROVED" | "REJE
     }
 
     return { success: true, refund };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -467,9 +460,8 @@ export async function setUserRole(userId: string, role: "BUYER" | "VENDOR" | "AD
     });
 
     return { success: true, user };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }
 
@@ -496,9 +488,8 @@ export async function getAuditLog(page: number = 1, limit: number = 50) {
     ]);
 
     return { success: true, entries, total, pageCount: Math.max(1, Math.ceil(total / limit)) };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message, entries: [], total: 0, pageCount: 0 };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)), entries: [], total: 0, pageCount: 0 };
   }
 }
 
@@ -538,8 +529,7 @@ export async function processVendorPayout(storeId: string) {
     });
 
     return { success: true, payout: result.payout, pendingManualTransfer: result.pendingManualTransfer };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
-    return { success: false, error: error.message };
+  } catch (error) {
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) };
   }
 }

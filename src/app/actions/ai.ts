@@ -1,6 +1,11 @@
 "use server";
 
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Redis } from "@upstash/redis";
+
+const upstashUrl = process.env.UPSTASH_REDIS_REST_URL;
+const upstashToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+const redis = upstashUrl && upstashToken ? new Redis({ url: upstashUrl, token: upstashToken }) : null;
 
 // Initialize the Gemini API client safely
 const getGenAIClient = () => {
@@ -30,6 +35,12 @@ export async function getAIPriceSuggestions(
   description: string
 ): Promise<{ success: boolean; data: PricingSuggestion }> {
   try {
+    const cacheKey = `ai:price:${productName.replace(/[^a-zA-Z0-9]/g, '')}`;
+    if (redis) {
+      const cached = await redis.get<PricingSuggestion>(cacheKey);
+      if (cached) return { success: true, data: cached };
+    }
+
     const genAI = getGenAIClient();
     
     if (genAI) {
@@ -59,10 +70,11 @@ export async function getAIPriceSuggestions(
       const cleanedJson = text.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       const parsed = JSON.parse(cleanedJson) as PricingSuggestion;
       
+      if (redis) await redis.set(cacheKey, parsed, { ex: 60 * 60 * 24 * 30 });
+
       return { success: true, data: parsed };
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Pricing Advisor API Error, falling back to local model:", error);
   }
 
@@ -137,6 +149,12 @@ export async function getAIRecommendations(
   allAvailableProducts: Array<{ id: string; name: string; category: string; price: number }>
 ): Promise<{ success: boolean; data: AIRecommendation }> {
   try {
+    const cacheKey = `ai:recommendation:${activeProductId}`;
+    if (redis) {
+      const cached = await redis.get<AIRecommendation>(cacheKey);
+      if (cached) return { success: true, data: cached };
+    }
+
     const genAI = getGenAIClient();
 
     if (genAI) {
@@ -170,10 +188,11 @@ export async function getAIRecommendations(
       const cleanedJson = text.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       const parsed = JSON.parse(cleanedJson) as AIRecommendation;
 
+      if (redis) await redis.set(cacheKey, parsed, { ex: 60 * 60 * 24 * 30 });
+
       return { success: true, data: parsed };
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Recommendation Engine API Error, falling back to local:", error);
   }
 
@@ -257,6 +276,12 @@ export async function expandSearchQuery(
   query: string
 ): Promise<{ success: boolean; synonyms: string[] }> {
   try {
+    const cacheKey = `ai:search:${query.replace(/[^a-zA-Z0-9]/g, '')}`;
+    if (redis) {
+      const cached = await redis.get<string[]>(cacheKey);
+      if (cached) return { success: true, synonyms: cached };
+    }
+
     const genAI = getGenAIClient();
 
     if (genAI) {
@@ -279,10 +304,11 @@ export async function expandSearchQuery(
       const cleanedJson = text.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
       const parsed = JSON.parse(cleanedJson) as string[];
 
+      if (redis) await redis.set(cacheKey, parsed, { ex: 60 * 60 * 24 * 30 });
+
       return { success: true, synonyms: parsed };
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Search Query Expander Error, falling back to local:", error);
   }
 
@@ -355,6 +381,12 @@ export async function generateRichDescription(
   shortDescription: string
 ): Promise<{ success: boolean; data: RichProductDescription }> {
   try {
+    const cacheKey = `ai:desc:${name.replace(/[^a-zA-Z0-9]/g, '')}`;
+    if (redis) {
+      const cached = await redis.get<RichProductDescription>(cacheKey);
+      if (cached) return { success: true, data: cached };
+    }
+
     const genAI = getGenAIClient();
     if (genAI) {
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -382,10 +414,11 @@ export async function generateRichDescription(
       const cleanedJson = text.replace(/^\`\`\`json\\s*/i, "").replace(/\`\`\`$/, "").trim();
       const parsed = JSON.parse(cleanedJson) as RichProductDescription;
 
+      if (redis) await redis.set(cacheKey, parsed, { ex: 60 * 60 * 24 * 30 });
+
       return { success: true, data: parsed };
     }
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Gemini Rich Description API Error, falling back to local:", error);
   }
 

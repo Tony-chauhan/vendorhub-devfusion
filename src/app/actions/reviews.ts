@@ -90,7 +90,7 @@ export async function createReview(input: { productId: string; rating: number; c
     if (error && typeof error === "object" && "code" in error && (error as { code: unknown }).code === "P2002") {
       return { success: false as const, error: "You have already reviewed this product" };
     }
-    const message = error instanceof Error ? error.message : "Failed to submit review";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to submit review";
     return { success: false as const, error: message };
   }
 }
@@ -113,7 +113,7 @@ export async function getProductReviews(productId: string) {
 
     return { success: true as const, reviews };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load reviews";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load reviews";
     return { success: false as const, error: message, reviews: [] };
   }
 }

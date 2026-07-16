@@ -104,7 +104,7 @@ export default function InventoryDashboard() {
         toast.success("Product removed from inventory");
         setProducts((prev) => prev.filter((p) => p.id !== product.id));
       } else {
-        toast.error(result.error);
+        toast.error(result.error || "Failed to remove product");
       }
     });
   };

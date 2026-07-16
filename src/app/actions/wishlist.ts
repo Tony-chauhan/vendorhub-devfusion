@@ -69,7 +69,7 @@ export async function toggleWishlist(productId: string) {
 
     return { success: true as const, wishlisted: true };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to update wishlist";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to update wishlist";
     return { success: false as const, error: message };
   }
 }
@@ -109,7 +109,7 @@ export async function getWishlistedProductIds() {
 
     return { success: true as const, productIds: user.wishlist.map((p) => p.id) };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load wishlist";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load wishlist";
     return { success: false as const, error: message, productIds: [] as string[] };
   }
 }

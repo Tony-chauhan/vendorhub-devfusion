@@ -313,7 +313,7 @@ export async function searchProducts(
       pageCount: Math.max(1, Math.ceil(total / limit)),
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to search products";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to search products";
     return { success: false as const, error: message, products: [], total: 0, page: 1, pageCount: 0 };
   }
 }
@@ -433,7 +433,7 @@ export async function getProductById(id: string): Promise<
       },
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load product";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load product";
     return { success: false, error: message, product: null };
   }
 }
@@ -461,7 +461,7 @@ export async function getProductsByIds(ids: string[]): Promise<
 
     return { success: true, products: rows.map(mapDbToCatalog) };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load products";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load products";
     return { success: false, error: message, products: [] };
   }
 }
@@ -494,7 +494,7 @@ export async function getVendorProducts() {
 
     return { success: true as const, products: rows.map(mapDbToCatalog) };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load inventory";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load inventory";
     return { success: false as const, error: message, products: [] as CatalogProduct[] };
   }
 }
@@ -570,10 +570,9 @@ export async function addProduct(data: AddProductInput) {
 
     return { success: true, product };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Server Action AddProduct Error:", error);
-    return { success: false, error: error.message || "Failed to create product listing on server" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to create product listing on server" };
   }
 }
 
@@ -616,10 +615,9 @@ export async function deleteProduct(productId: string) {
 
     return { success: true };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Server Action DeleteProduct Error:", error);
-    return { success: false, error: error.message || "Failed to delete product listing" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to delete product listing" };
   }
 }
 
@@ -685,7 +683,7 @@ export async function updateProduct(data: {
 
     return { success: true, product: mapDbToCatalog(product) };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to update product";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to update product";
     return { success: false, error: message };
   }
 }
@@ -801,7 +799,7 @@ export async function getVendorAnalytics(): Promise<
       })),
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load vendor analytics";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load vendor analytics";
     return { success: false, error: message };
   }
 }
@@ -852,7 +850,7 @@ export async function toggleProductStock(productId: string) {
 
     return { success: true, product: mapDbToCatalog(updated), inStock: updated.stock > 0 };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to toggle stock";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to toggle stock";
     return { success: false, error: message };
   }
 }

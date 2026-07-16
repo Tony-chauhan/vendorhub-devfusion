@@ -273,10 +273,9 @@ export async function createOrder(data: CreateOrderInput) {
       requiresPayment: false as const,
     };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Server Action CreateOrder Error:", error);
-    return { success: false as const, error: error.message || "Failed to process checkout on server" };
+    return { success: false as const, error: (error instanceof Error ? error.message : String(error)) || "Failed to process checkout on server" };
   }
 }
 
@@ -327,7 +326,7 @@ export async function verifyRazorpayPayment(input: {
 
     return { success: true as const, verified: true };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to verify payment";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to verify payment";
     return { success: false as const, error: message };
   }
 }
@@ -394,7 +393,7 @@ export async function updateOrderStatus(orderId: string, status: "CONFIRMED" | "
 
     return { success: true as const, order };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to update order status";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to update order status";
     return { success: false as const, error: message };
   }
 }
@@ -435,7 +434,7 @@ export async function getVendorOrders() {
 
     return { success: true as const, orders };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load vendor orders";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load vendor orders";
     return { success: false as const, error: message, orders: [] };
   }
 }
@@ -499,7 +498,7 @@ export async function requestRefund(orderId: string, reason: string) {
 
     return { success: true as const, refund };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to submit refund request";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to submit refund request";
     return { success: false as const, error: message };
   }
 }
@@ -547,7 +546,7 @@ export async function getMyOrders() {
 
     return { success: true as const, orders };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load your orders";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load your orders";
     return { success: false as const, error: message, orders: [] };
   }
 }

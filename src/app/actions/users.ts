@@ -97,7 +97,7 @@ export async function getCurrentUserProfile(): Promise<
       },
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load profile";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load profile";
     return { success: false, error: message };
   }
 }
@@ -153,7 +153,7 @@ export async function updateUserProfile(data: { name: string }): Promise<
       },
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to update profile";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to update profile";
     return { success: false, error: message };
   }
 }

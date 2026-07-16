@@ -118,10 +118,9 @@ export async function registerVendor(data: RegisterVendorInput) {
       status: store.status,
       storeName: store.name,
     };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Server Action RegisterVendor Error:", error);
-    return { success: false, error: error.message || "Failed to submit vendor application" };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to submit vendor application" };
   }
 }
 
@@ -179,9 +178,8 @@ export async function getCurrentUserRoleAndStore() {
       name: user.name,
       store: user.store,
     };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  } catch (error: any) {
+  } catch (error) {
     console.error("Error in getCurrentUserRoleAndStore:", error);
-    return { success: false, error: error.message || "Failed to fetch user role", role: "BUYER" as const, store: null };
+    return { success: false, error: (error instanceof Error ? error.message : String(error)) || "Failed to fetch user role", role: "BUYER" as const, store: null };
   }
 }

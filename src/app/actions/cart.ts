@@ -68,7 +68,7 @@ export async function saveCart(items: Record<string, number>) {
 
     return { success: true, source: "database" };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to save cart";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to save cart";
     console.error("saveCart error:", message);
     return { success: false, error: message };
   }
@@ -106,7 +106,7 @@ export async function loadCart(): Promise<
     const items = JSON.parse(user.cartData) as Record<string, number>;
     return { success: true, items };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to load cart";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load cart";
     console.error("loadCart error:", message);
     return { success: false, error: message };
   }
@@ -131,7 +131,7 @@ export async function clearServerCart() {
 
     return { success: true };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : "Failed to clear cart";
+    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to clear cart";
     return { success: false, error: message };
   }
 }

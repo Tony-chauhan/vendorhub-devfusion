@@ -122,14 +122,15 @@ function checkRateLimitInMemory(
 
 /**
  * Checks whether a request from the given identifier is within the
- * configured rate limit. Returns the result without throwing. Fails open to
- * the in-memory limiter if Upstash is configured but unreachable, so a Redis
- * outage degrades rate-limit precision rather than taking the app down.
+ * configured rate limit. Returns the result without throwing. 
+ * In production, strictly requires Upstash Redis and fails closed if unavailable.
  */
 export async function checkRateLimit(
   identifier: string,
   config: RateLimitConfig
 ): Promise<RateLimitResult> {
+  const isProduction = process.env.NODE_ENV === "production";
+
   if (useUpstash) {
     try {
       const limiter = getUpstashLimiter(config);
@@ -140,10 +141,19 @@ export async function checkRateLimit(
         retryAfterMs: result.success ? 0 : Math.max(result.reset - Date.now(), 0),
       };
     } catch (error) {
-      console.error("[rate-limit] Upstash request failed, falling back to in-memory check:", error);
+      console.error("[rate-limit] Upstash request failed:", error);
+      if (isProduction) {
+        // Fail closed in production to prevent abuse if Redis is down
+        throw new Error("Rate limiting service unavailable in production.");
+      }
       return checkRateLimitInMemory(identifier, config);
     }
   }
+
+  if (isProduction) {
+    throw new Error("UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN must be set in production.");
+  }
+
   return checkRateLimitInMemory(identifier, config);
 }
 
