@@ -22,11 +22,11 @@ describe("isMockDb", () => {
 });
 
 describe("isMockAuth", () => {
-  it("returns true when CLERK_SECRET_KEY is empty", async () => {
+  it("returns false as mock auth is permanently disabled", async () => {
     delete process.env.CLERK_SECRET_KEY;
     delete process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
     const { isMockAuth } = await import("./env");
-    expect(isMockAuth()).toBe(true);
+    expect(isMockAuth()).toBe(false);
   });
 });
 

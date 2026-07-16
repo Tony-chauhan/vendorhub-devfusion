@@ -1,9 +1,6 @@
 import { createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { customClerkMiddleware } from "@/lib/clerk-server";
-import { isMockAuth } from "@/lib/env";
-
-const isMock = isMockAuth();
 
 // Define matchers for routes that require authentication
 const isProtectedRoute = createRouteMatcher([
@@ -22,7 +19,6 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 const isVendorAreaRoute = createRouteMatcher(["/store(.*)"]);
 
 export default customClerkMiddleware(async (auth: any, req: any) => {
-  if (isMock) return;
   if (!isProtectedRoute(req)) return;
 
   await auth.protect();

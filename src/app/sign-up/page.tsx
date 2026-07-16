@@ -2,11 +2,9 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { ArrowLeft, ShoppingBag, Store, Check } from "lucide-react";
 import * as Clerk from "@clerk/nextjs";
-import { IS_MOCK_AUTH } from "@/lib/clerk-client";
-import { completeRegistration, type RegistrationIntent } from "@/app/actions/users";
+import { type RegistrationIntent } from "@/app/actions/users";
 
 export const REGISTRATION_INTENT_KEY = "vendorhub_registration_intent";
 
@@ -31,21 +29,12 @@ const ROLE_OPTIONS: Array<{
 ];
 
 export default function SignUpPage() {
-  const router = useRouter();
   const [step, setStep] = useState<"role" | "signup">("role");
   const [selectedRole, setSelectedRole] = useState<RegistrationIntent>("BUYER");
 
   const handleRoleContinue = () => {
     sessionStorage.setItem(REGISTRATION_INTENT_KEY, selectedRole);
     setStep("signup");
-  };
-
-  const handleMockSignUp = async () => {
-    sessionStorage.setItem(REGISTRATION_INTENT_KEY, selectedRole);
-    const result = await completeRegistration(selectedRole);
-    if (result.success) {
-      router.push(result.redirectTo);
-    }
   };
 
   if (step === "role") {
@@ -98,21 +87,12 @@ export default function SignUpPage() {
             })}
           </div>
 
-          {IS_MOCK_AUTH ? (
-            <button
-              onClick={handleMockSignUp}
-              className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-full transition-colors cursor-pointer"
-            >
-              Continue in Evaluation Mode
-            </button>
-          ) : (
-            <button
-              onClick={handleRoleContinue}
-              className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-full transition-colors cursor-pointer"
-            >
-              Continue to Sign Up
-            </button>
-          )}
+          <button
+            onClick={handleRoleContinue}
+            className="w-full px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-full transition-colors cursor-pointer"
+          >
+            Continue to Sign Up
+          </button>
 
           <p className="text-center text-xs text-slate-500">
             Already have an account?{" "}
@@ -123,10 +103,6 @@ export default function SignUpPage() {
         </div>
       </div>
     );
-  }
-
-  if (IS_MOCK_AUTH) {
-    return null;
   }
 
   return (

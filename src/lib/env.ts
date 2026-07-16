@@ -29,15 +29,9 @@ export function isMockDb(): boolean {
   );
 }
 
-/** True when Clerk credentials are absent or placeholders. */
+/** True when Clerk credentials are absent or placeholders. Currently disabled permanently. */
 export function isMockAuth(): boolean {
-  return (
-    !clerkSecret ||
-    clerkSecret.includes("mock") ||
-    !clerkPub ||
-    clerkPub.includes("mock") ||
-    clerkPub.startsWith("pk_test_dGVhbXhkZXNpZ24")
-  );
+  return false;
 }
 
 /** True when Razorpay credentials are absent or placeholders. */
