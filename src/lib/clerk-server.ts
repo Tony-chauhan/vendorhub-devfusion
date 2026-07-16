@@ -52,6 +52,28 @@ export async function customCurrentUser() {
 }
 
 /**
+ * 🔒 Safe auth server helper
+ */
+export async function customAuth() {
+  if (IS_MOCK_AUTH) {
+    const user = await customCurrentUser();
+    return {
+      userId: user ? user.id : null,
+    };
+  }
+
+  try {
+    return await ClerkServer.auth();
+  } catch (e) {
+    console.error("ClerkServer auth error, falling back to mock session:", e);
+    const user = await customCurrentUser();
+    return {
+      userId: user ? user.id : null,
+    };
+  }
+}
+
+/**
  * Syncs a user's authoritative DB role into Clerk's publicMetadata so
  * proxy.ts can do a fast edge-level allow/redirect from `sessionClaims`
  * without a DB round-trip. This is a UX optimization only — every server

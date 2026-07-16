@@ -106,15 +106,15 @@ export function useCustomUser() {
 export function CustomSignOutButton({ children }: { children: React.ReactNode }) {
   if (IS_MOCK_AUTH) {
     return (
-      <button
+      <div
         onClick={() => {
           document.cookie = "mock_user_role=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC;";
           window.location.href = "/sign-in";
         }}
-        className="w-full h-full text-left"
+        className="cursor-pointer"
       >
         {children}
-      </button>
+      </div>
     );
   }
 
@@ -127,12 +127,14 @@ export function CustomSignOutButton({ children }: { children: React.ReactNode })
 export function CustomSignInButton({ children }: { children: React.ReactNode }) {
   if (IS_MOCK_AUTH) {
     return (
-      <button
-        onClick={() => alert("Sign in simulated in zero-config evaluation mode!")}
-        className="w-full h-full text-left"
+      <div
+        onClick={() => {
+          window.location.href = "/sign-in";
+        }}
+        className="cursor-pointer"
       >
         {children}
-      </button>
+      </div>
     );
   }
 
@@ -145,12 +147,14 @@ export function CustomSignInButton({ children }: { children: React.ReactNode }) 
 export function CustomSignUpButton({ children }: { children: React.ReactNode }) {
   if (IS_MOCK_AUTH) {
     return (
-      <button
-        onClick={() => (window.location.href = "/sign-up")}
-        className="w-full h-full text-left"
+      <div
+        onClick={() => {
+          window.location.href = "/sign-in";
+        }}
+        className="cursor-pointer"
       >
         {children}
-      </button>
+      </div>
     );
   }
 
