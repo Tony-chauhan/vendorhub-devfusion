@@ -13,7 +13,6 @@ describe("checkStatusTransition", () => {
   });
 
   it("rejects moving backward", () => {
-    // @ts-expect-error - purposefully passing invalid status for test
     const result = checkStatusTransition("DELIVERED", "PLACED");
     expect(result.allowed).toBe(false);
     expect(result.error).toMatch(/backward/i);
