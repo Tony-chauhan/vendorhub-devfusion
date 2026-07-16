@@ -14,7 +14,7 @@ jobs:
       # mock mode during CI — no real database or third-party account needed
       # to lint, typecheck, test, or build.
       DATABASE_URL: "postgresql://mock:mockpassword@ep-mock-host.ap-southeast-1.aws.neon.tech/mock?sslmode=require"
-      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVhbXhkZXNpZ24tbW9jay1rZXk"
+      NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_ZXZvbHZpbmctYXBoaWQtODkuY2xlcmsuYWNjb3VudHMuZGV2JA"
       CLERK_SECRET_KEY: "sk_test_mock"
       NEXT_PUBLIC_RAZORPAY_KEY_ID: "rzp_test_mock"
       RAZORPAY_KEY_SECRET: "mock"
@@ -52,7 +52,7 @@ jobs:
       - name: Run E2E Tests
         run: npx playwright test
         env:
-          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_dGVhbXhkZXNpZ24tbW9jay1rZXk"
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: "pk_test_ZXZvbHZpbmctYXBoaWQtODkuY2xlcmsuYWNjb3VudHMuZGV2JA"
           CLERK_SECRET_KEY: "sk_test_mock"
           NEXT_PUBLIC_RAZORPAY_KEY_ID: "rzp_test_mock"
           RAZORPAY_KEY_SECRET: "mock"
