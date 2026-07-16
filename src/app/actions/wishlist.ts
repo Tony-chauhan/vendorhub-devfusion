@@ -85,7 +85,7 @@ export async function getWishlistedProductIds() {
       return { success: true as const, productIds: [] as string[] };
     }
 
-    let user = await prisma.user.findUnique({
+    const user = await prisma.user.findUnique({
       where: { clerkId: clerkUser.id },
       select: { wishlist: { select: { id: true } } },
     });

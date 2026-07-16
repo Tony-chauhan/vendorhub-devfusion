@@ -24,7 +24,7 @@ describe("encryptSensitive / decryptSensitive", () => {
   it("throws on a tampered ciphertext (auth tag mismatch)", async () => {
     const { encryptSensitive, decryptSensitive } = await import("./crypto");
     const encrypted = encryptSensitive("98765432104820");
-    const [iv, tag, data] = encrypted.split(":");
+    const [iv, tag] = encrypted.split(":");
     const tampered = [iv, tag, Buffer.from("tampered-data").toString("base64")].join(":");
     expect(() => decryptSensitive(tampered)).toThrow();
   });

@@ -22,7 +22,7 @@ export async function logAdminAction(params: {
         action: params.action,
         targetType: params.targetType,
         targetId: params.targetId,
-        metadata: params.metadata as any,
+        metadata: params.metadata ? (params.metadata as object) : undefined,
       },
     });
   } catch (error) {

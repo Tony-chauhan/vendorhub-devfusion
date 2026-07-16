@@ -2,17 +2,14 @@
 
 import React from 'react';
 import { Provider } from 'react-redux';
-import { makeStore, AppStore } from '@/lib/store';
+import { makeStore } from '@/lib/store';
 import CartSync from '@/components/CartSync';
 
 export default function StoreProvider({ children }: { children: React.ReactNode }) {
-  const storeRef = React.useRef<AppStore | undefined>(undefined);
-  if (!storeRef.current) {
-    storeRef.current = makeStore();
-  }
+  const [store] = React.useState(() => makeStore());
 
   return (
-    <Provider store={storeRef.current}>
+    <Provider store={store}>
       <CartSync />
       {children}
     </Provider>

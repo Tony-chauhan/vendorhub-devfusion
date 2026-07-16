@@ -195,7 +195,7 @@ export default function StoreDashboard() {
           transition={{ delay: 0.4, duration: 0.35 }}
           className="lg:col-span-2 grid grid-cols-1 sm:grid-cols-3 gap-4"
         >
-          {quickActions.map((action, i) => {
+          {quickActions.map((action) => {
             const ActionIcon = action.icon;
             return (
               <Link
@@ -236,7 +236,7 @@ export default function StoreDashboard() {
         </h2>
 
         <div className="grid grid-cols-1 gap-4 max-w-4xl">
-          {dashboardData.ratings.map((review: any, idx: number) => {
+          {dashboardData.ratings.map((review, idx: number) => {
             const averageStars = review.rating || 5;
 
             return (
@@ -252,7 +252,7 @@ export default function StoreDashboard() {
                     {review.user?.image ? (
                       <Image
                         src={review.user.image}
-                        alt={review.user.name}
+                        alt={review.user.name || "User"}
                         width={40}
                         height={40}
                         className="object-cover"

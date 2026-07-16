@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { completeRegistration, type RegistrationIntent } from "@/app/actions/users";
-import { REGISTRATION_INTENT_KEY } from "../page";
+import { REGISTRATION_INTENT_KEY } from "../[[...sign-up]]/page";
 
 export default function SignUpCompletePage() {
   const router = useRouter();

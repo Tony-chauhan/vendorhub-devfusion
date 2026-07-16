@@ -4,8 +4,9 @@ import React, { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Star, MessageSquare, ShieldAlert, ArrowRight, Store } from 'lucide-react';
+import { Star, MessageSquare, ArrowRight, Store, Sparkles, CheckCircle2, Box, Info } from 'lucide-react';
 import RatingModal from './RatingModal';
+import { generateRichDescription, RichProductDescription } from '@/app/actions/ai';
 
 interface ProductDescriptionProps {
   product: {
@@ -14,15 +15,15 @@ interface ProductDescriptionProps {
     description: string;
     mrp: number;
     price: number;
-    images: any[];
+    images: string[];
     category: string;
-    rating?: any[];
+    rating?: { id: string; rating: number; comment?: string | null; user?: { name?: string | null; email?: string | null; imageUrl?: string | null } }[];
     store?: {
       id: string;
       name: string;
       description: string | null;
       address: string | null;
-      logo: any;
+      logo: string | null;
     } | null;
   };
 }
@@ -31,6 +32,17 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
   const router = useRouter();
   const [selectedTab, setSelectedTab] = useState<'Description' | 'Reviews'>('Description');
   const [showRatingModal, setShowRatingModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [richDesc, setRichDesc] = useState<RichProductDescription | null>(null);
+
+  const handleGenerateAI = async () => {
+    setIsGenerating(true);
+    const res = await generateRichDescription(product.name, product.category, product.price, product.description);
+    if (res?.success) {
+      setRichDesc(res.data);
+    }
+    setIsGenerating(false);
+  };
 
   const reviews = product.rating || [];
 
@@ -58,8 +70,106 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
 
       {/* Tab Contents: Description */}
       {selectedTab === 'Description' && (
-        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 max-w-3xl shadow-sm leading-relaxed text-slate-650 space-y-4">
-          <p className="font-medium">{product.description}</p>
+        <div className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 max-w-4xl shadow-sm leading-relaxed text-slate-650 space-y-6">
+          {!richDesc && (
+            <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 border-b border-slate-100 pb-6">
+              <div className="space-y-2 max-w-2xl">
+                <p className="font-medium text-sm text-slate-700">{product.description}</p>
+              </div>
+              <button
+                onClick={handleGenerateAI}
+                disabled={isGenerating}
+                className="shrink-0 flex items-center justify-center space-x-2 px-5 py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold rounded-xl border border-indigo-200 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+              >
+                {isGenerating ? (
+                  <span className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                    <span>Analyzing...</span>
+                  </span>
+                ) : (
+                  <>
+                    <Sparkles className="w-4 h-4" />
+                    <span>Enhance Description</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {richDesc && (
+            <div className="space-y-10 animate-in fade-in duration-500">
+              {/* Highlights */}
+              <div className="space-y-4">
+                <h3 className="font-extrabold text-lg text-slate-900 flex items-center space-x-2">
+                  <Star className="w-5 h-5 text-amber-400 fill-amber-400" />
+                  <span>Key Highlights</span>
+                </h3>
+                <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {richDesc.highlights.map((h, i) => (
+                    <li key={i} className="flex items-start space-x-3 text-sm text-slate-700 font-medium bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+                      <span>{h}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              {/* Detailed About */}
+              <div className="space-y-4">
+                <h3 className="font-extrabold text-lg text-slate-900 flex items-center space-x-2">
+                  <Info className="w-5 h-5 text-indigo-500" />
+                  <span>About this item</span>
+                </h3>
+                <div className="text-sm text-slate-600 space-y-4 leading-loose whitespace-pre-wrap">
+                  {richDesc.detailedDescription}
+                </div>
+              </div>
+
+              {/* Specifications Table & Box contents side-by-side on large screens */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {/* Specs */}
+                <div className="space-y-4">
+                  <h3 className="font-extrabold text-lg text-slate-900 border-b border-slate-200 pb-2">
+                    Specifications
+                  </h3>
+                  <div className="border border-slate-200 rounded-xl overflow-hidden text-sm">
+                    {Object.entries(richDesc.keyFeatures).map(([k, v], i) => (
+                      <div key={k} className={`flex items-center p-3 ${i % 2 === 0 ? 'bg-slate-50' : 'bg-white'}`}>
+                        <span className="w-1/3 font-bold text-slate-700">{k}</span>
+                        <span className="w-2/3 text-slate-600">{v}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* What's in the box */}
+                <div className="space-y-4">
+                  <h3 className="font-extrabold text-lg text-slate-900 border-b border-slate-200 pb-2 flex items-center space-x-2">
+                    <Box className="w-5 h-5 text-slate-500" />
+                    <span>What&apos;s in the box</span>
+                  </h3>
+                  <ul className="space-y-3">
+                    {richDesc.whatsInTheBox.map((item, i) => (
+                      <li key={i} className="flex items-center space-x-3 text-sm text-slate-700 font-medium">
+                        <div className="w-1.5 h-1.5 bg-slate-400 rounded-full" />
+                        <span>{item}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              {/* Persuasive Closer */}
+              <div className="bg-gradient-to-br from-indigo-900 to-slate-900 p-6 rounded-2xl text-white shadow-lg relative overflow-hidden group">
+                <div className="absolute -right-4 -top-4 w-24 h-24 bg-white/10 rounded-full blur-2xl group-hover:bg-white/20 transition-all duration-700" />
+                <h4 className="font-extrabold text-lg mb-2">Why buy this today?</h4>
+                <p className="text-indigo-100 text-sm leading-relaxed max-w-2xl font-medium">
+                  {richDesc.whyBuyThis}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div className="border-t border-slate-100 pt-4 flex items-center justify-between text-[11px] text-slate-400 font-bold uppercase tracking-wider">
             <span>Product Code: {product.id}</span>
             <span>Category: {product.category}</span>
@@ -89,16 +199,16 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
           {/* List reviews */}
           {reviews.length > 0 ? (
             <div className="flex flex-col space-y-4">
-              {reviews.map((item: any, idx: number) => (
+              {reviews.map((item, idx: number) => (
                 <div
                   key={`${item.id || 'rat'}-${idx}`}
                   className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row items-start gap-4 sm:gap-6 animate-in fade-in duration-300"
                 >
                   <div className="w-10 h-10 rounded-full bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shrink-0">
-                    {item.user?.image ? (
+                    {item.user?.imageUrl ? (
                       <Image
-                        src={item.user.image}
-                        alt={item.user.name}
+                        src={item.user.imageUrl}
+                        alt={item.user.name || "User"}
                         width={40}
                         height={40}
                         className="object-cover"
@@ -115,7 +225,7 @@ export default function ProductDescription({ product }: ProductDescriptionProps)
                         {item.user?.name || 'Anonymous Buyer'}
                       </p>
                       <span className="text-[10px] text-slate-400 font-bold uppercase">
-                        {new Date(item.createdAt).toDateString()}
+                        {new Date((item as any).createdAt || Date.now()).toDateString()}
                       </span>
                     </div>
 

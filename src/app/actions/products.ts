@@ -70,6 +70,7 @@ function mapDummyToCatalog(product: (typeof productDummyData)[number]): CatalogP
     price: product.price,
     mrp: product.mrp ?? computeMrp(product.price),
     stock: product.inStock ? 10 : 0,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     images: product.images.map((img: any) => typeof img === 'string' ? img : (img?.src || '')),
     category: product.category,
     location: product.store?.address ?? null,
@@ -373,6 +374,7 @@ export async function getProductById(id: string): Promise<
         success: true,
         product: {
           ...base,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           rating: dummyReviews.map((r: any, idx: number) => ({
             id: r.id ?? `rat_${idx}`,
             rating: r.rating,
@@ -568,6 +570,7 @@ export async function addProduct(data: AddProductInput) {
 
     return { success: true, product };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Server Action AddProduct Error:", error);
     return { success: false, error: error.message || "Failed to create product listing on server" };
@@ -613,6 +616,7 @@ export async function deleteProduct(productId: string) {
 
     return { success: true };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Server Action DeleteProduct Error:", error);
     return { success: false, error: error.message || "Failed to delete product listing" };

@@ -27,6 +27,7 @@ export default function AdminRefunds() {
       setLoading(true);
       const res = await getRefundRequests();
       if (res.success && res.refunds) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         setRefunds(res.refunds as any);
       } else {
         toast.error(res.error || 'Failed to load refund requests');

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { ShieldCheck, Zap, Sparkles, Check, HelpCircle, Users } from 'lucide-react';
+import { ShieldCheck, Zap, Sparkles, Check, Users } from 'lucide-react';
 import Banner from '@/components/Banner';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';

@@ -11,7 +11,7 @@ interface StoreInfoProps {
     description: string;
     username: string;
     address: string;
-    logo: any;
+    logo: string | null;
     email: string;
     contact: string;
     createdAt: string;
@@ -19,7 +19,7 @@ interface StoreInfoProps {
     user: {
       name: string;
       email: string;
-      image: any;
+      image: string | null;
     };
   };
 }

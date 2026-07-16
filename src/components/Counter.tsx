@@ -11,7 +11,7 @@ interface CounterProps {
 }
 
 export default function Counter({ productId, maxStock }: CounterProps) {
-  const cartItems = useSelector((state: any) => state.cart?.cartItems || {});
+  const cartItems = useSelector((state: { cart: { cartItems: Record<string, number> } }) => state.cart?.cartItems || {});
   const dispatch = useDispatch();
 
   const quantity = cartItems[productId] || 0;

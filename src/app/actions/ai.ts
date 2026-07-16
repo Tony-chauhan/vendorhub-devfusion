@@ -61,7 +61,8 @@ export async function getAIPriceSuggestions(
       
       return { success: true, data: parsed };
     }
-  } catch (error) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     console.error("Gemini Pricing Advisor API Error, falling back to local model:", error);
   }
 
@@ -171,7 +172,8 @@ export async function getAIRecommendations(
 
       return { success: true, data: parsed };
     }
-  } catch (error) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     console.error("Gemini Recommendation Engine API Error, falling back to local:", error);
   }
 
@@ -279,7 +281,8 @@ export async function expandSearchQuery(
 
       return { success: true, synonyms: parsed };
     }
-  } catch (error) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
     console.error("Gemini Search Query Expander Error, falling back to local:", error);
   }
 
@@ -330,5 +333,85 @@ export async function expandSearchQuery(
   return { 
     success: true, 
     synonyms: uniqueSyns.length > 0 ? uniqueSyns : [queryLower] 
+  };
+}
+
+export interface RichProductDescription {
+  highlights: string[];
+  keyFeatures: Record<string, string>;
+  detailedDescription: string;
+  whatsInTheBox: string[];
+  whyBuyThis: string;
+}
+
+/**
+ * 4. AI-Driven Rich Product Descriptions
+ * Generates an Amazon/Flipkart style detailed description.
+ */
+export async function generateRichDescription(
+  name: string,
+  category: string,
+  price: number,
+  shortDescription: string
+): Promise<{ success: boolean; data: RichProductDescription }> {
+  try {
+    const genAI = getGenAIClient();
+    if (genAI) {
+      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const prompt = `
+        You are an expert e-commerce copywriter. Generate a rich, premium product description for an item with the following details:
+        - Product Name: "${name}"
+        - Category: "${category}"
+        - Price: $${price}
+        - Brief Info: "${shortDescription}"
+
+        Produce a structured description that makes this product sound incredibly appealing, like a top-tier listing on Amazon or Flipkart.
+
+        Respond ONLY with a valid JSON object matching the following structure (no markdown fences, just the JSON):
+        {
+          "highlights": ["4 to 6 punchy bullet points emphasizing the best features"],
+          "keyFeatures": { "Feature 1 Name": "Feature 1 Value", "Feature 2 Name": "Feature 2 Value" },
+          "detailedDescription": "A 2 to 3 paragraph persuasive, detailed overview of the product, its use cases, and premium quality (at least 150 words).",
+          "whatsInTheBox": ["Item 1", "Item 2"],
+          "whyBuyThis": "A strong, persuasive 2-sentence closing statement on why the user should buy this right now."
+        }
+      `;
+
+      const result = await model.generateContent(prompt);
+      const text = result.response.text().trim();
+      const cleanedJson = text.replace(/^\`\`\`json\\s*/i, "").replace(/\`\`\`$/, "").trim();
+      const parsed = JSON.parse(cleanedJson) as RichProductDescription;
+
+      return { success: true, data: parsed };
+    }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  } catch (error: any) {
+    console.error("Gemini Rich Description API Error, falling back to local:", error);
+  }
+
+  // --- Fallback if no API key or error ---
+  return {
+    success: true,
+    data: {
+      highlights: [
+        "Premium quality materials",
+        "Expertly crafted for durability",
+        "Modern and elegant design",
+        "100% satisfaction guaranteed"
+      ],
+      keyFeatures: {
+        "Brand": "VendorHub Originals",
+        "Category": category,
+        "Condition": "Brand New",
+        "Quality": "Premium Grade"
+      },
+      detailedDescription: `Experience the finest quality with the ${name}. ${shortDescription} Designed to meet the highest standards, this product is the perfect blend of functionality and style. Whether you are using it daily or saving it for special occasions, it promises to deliver outstanding performance and reliability.\n\nOur commitment to excellence means you get a product that not only looks great but is built to last. Upgrade your lifestyle with this exceptional offering from our hyperlocal catalog.`,
+      whatsInTheBox: [
+        `1x ${name}`,
+        "User Manual / Care Instructions",
+        "Authenticity Certificate"
+      ],
+      whyBuyThis: "Don't miss out on this premium, highly-rated item. Add it to your cart now to experience true quality."
+    }
   };
 }

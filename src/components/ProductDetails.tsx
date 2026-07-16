@@ -4,7 +4,7 @@ import React, { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useDispatch, useSelector } from 'react-redux';
 import Image from 'next/image';
-import { Star, ShieldAlert, Sparkles, ShoppingCart, Percent, Globe, ShieldCheck, Heart, Award, ArrowRight } from 'lucide-react';
+import { Star, Sparkles, ShoppingCart, Percent, Globe, ShieldCheck, Heart, Award, ArrowRight } from 'lucide-react';
 import toast from 'react-hot-toast';
 import confetti from 'canvas-confetti';
 import { addToCart } from '@/lib/features/cart/cartSlice';
@@ -19,9 +19,9 @@ interface ProductDetailsProps {
     description: string;
     mrp: number;
     price: number;
-    images: any[];
+    images: string[];
     category: string;
-    rating?: any[];
+    rating?: { rating: number }[];
   };
 }
 
@@ -31,16 +31,16 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
 
   // Redux items
-  const cartItems = useSelector((state: any) => state.cart?.cartItems || {});
-  const productsList = useSelector((state: any) => state.product?.list || []);
+  const cartItems = useSelector((state: { cart: { cartItems: Record<string, number> } }) => state.cart?.cartItems || {});
+  const productsList = useSelector((state: { product: { list: ProductDetailsProps['product'][] } }) => state.product?.list || []);
 
   // Component local states
   const [mainImage, setMainImage] = useState(product.images[0]);
   const [isWished, setIsWished] = useState(false);
 
   // Gemini recommendations state
-  const [aiRecs, setAiRecs] = useState<any>(null);
-  const [isPending, startTransition] = useTransition();
+  const [aiRecs, setAiRecs] = useState<{ message: string; products: ProductDetailsProps['product'][] } | null>(null);
+  const [, startTransition] = useTransition();
 
   const productId = product.id;
   const inCart = !!cartItems[productId];
@@ -75,7 +75,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   useEffect(() => {
     startTransition(async () => {
       try {
-        const rawRecs = productsList.map((p: any) => ({
+        const rawRecs = productsList.map((p) => ({
           id: p.id,
           name: p.name,
           category: p.category,
@@ -92,12 +92,14 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
         if (res?.success && res.data) {
           // Resolve full product objects from the catalogue using recommendations IDs
           const resolvedProducts = res.data.recommendedProductIds
-            .map((recId: string) => productsList.find((p: any) => p.id === recId))
+            .map((recId: string) => productsList.find((p) => p.id === recId))
             .filter(Boolean);
 
           setAiRecs({
             ...res.data,
-            products: resolvedProducts,
+            message: res.data.recommendationReason || res.data.luxuryMessage || "Based on this item, we recommend these.",
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            products: resolvedProducts as any[],
           });
         }
       } catch (e) {
@@ -120,7 +122,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
     }
 
     // Add all recommended products in bundle to cart
-    aiRecs.products.forEach((p: any) => {
+    aiRecs.products.forEach((p) => {
       if (!cartItems[p.id]) {
         dispatch(addToCart({ productId: p.id }));
       }
@@ -158,7 +160,7 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
   const totalReviews = product.rating?.length || 0;
   const averageRating =
     totalReviews > 0
-      ? product.rating!.reduce((acc: number, curr: any) => acc + curr.rating, 0) / totalReviews
+      ? product.rating!.reduce((acc: number, curr: { rating: number }) => acc + curr.rating, 0) / totalReviews
       : 5;
 
   return (
@@ -334,21 +336,21 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
           <div className="bg-gradient-to-r from-indigo-50/50 via-white to-purple-50/30 border border-indigo-200/60 rounded-3xl p-6 flex flex-col space-y-4 shadow-sm animate-in fade-in slide-in-from-bottom-2 duration-300">
             <div className="flex items-center space-x-2 text-xs font-black text-indigo-700 uppercase tracking-widest">
               <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
-              <span>⚡ Gemini Curation: {aiRecs.complementaryTitle}</span>
+              <span>⚡ Gemini Curation: {(aiRecs as any).complementaryTitle || "Related Premium Items"}</span>
             </div>
 
             <div className="text-xs text-slate-500 space-y-1 leading-relaxed">
               <p className="font-semibold text-slate-700 italic">
-                "{aiRecs.recommendationReason}"
+                &quot;{(aiRecs as any).recommendationReason}&quot;
               </p>
               <p className="text-[10px] text-slate-400">
-                {aiRecs.luxuryMessage}
+                {(aiRecs as any).luxuryMessage}
               </p>
             </div>
 
             {/* List recommended products with image/name */}
             <div className="flex flex-col space-y-2.5 pt-2">
-              {aiRecs.products.map((p: any) => (
+              {aiRecs.products.map((p) => (
                 <div
                   key={p.id}
                   className="flex items-center justify-between p-2 bg-white/70 border border-slate-150 rounded-2xl"

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect } from "vitest";
 import { checkRateLimit } from "./rate-limit";
 
 // No UPSTASH_REDIS_REST_URL/_TOKEN are set in the test environment, so these

@@ -160,7 +160,7 @@ export default function Footer() {
                 </h4>
                 <ul className="flex flex-col space-y-2.5">
                   {section.links.map((link, linkIdx) => {
-                    const Icon = (link as any).icon;
+                    const Icon = (link as { icon?: React.ElementType }).icon;
                     return (
                       <li key={linkIdx}>
                         <Link

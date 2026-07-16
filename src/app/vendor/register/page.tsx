@@ -15,6 +15,8 @@ import {
   Hourglass,
   LayoutDashboard
 } from "lucide-react";
+
+import Image from "next/image";
 import Link from "next/link";
 import { registerVendor } from "@/app/actions/vendors";
 
@@ -286,7 +288,7 @@ export default function VendorRegisterPage() {
                       }`}
                     >
                       <div className="w-12 h-12 rounded-lg overflow-hidden border border-slate-200">
-                        <img src={preset.url} alt={preset.name} className="w-full h-full object-cover" />
+                        <Image src={preset.url} alt={preset.name} width={48} height={48} className="w-full h-full object-cover" />
                       </div>
                       <span className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider text-center">{preset.name}</span>
                     </button>

@@ -14,8 +14,7 @@ export const ADMIN_EMAIL =
 
 // ─── Mock Mode Detection ────────────────────────────────────────
 const dbUrl = process.env.DATABASE_URL ?? "";
-const clerkSecret = process.env.CLERK_SECRET_KEY ?? "";
-const clerkPub = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
+
 const razorpayKeyId = process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ?? "";
 const razorpayKeySecret = process.env.RAZORPAY_KEY_SECRET ?? "";
 

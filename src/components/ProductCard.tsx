@@ -12,9 +12,9 @@ interface ProductCardProps {
     description: string;
     mrp: number;
     price: number;
-    images: any[];
+    images: string[];
     category: string;
-    rating?: any[];
+    rating?: { rating: number }[];
   };
 }
 

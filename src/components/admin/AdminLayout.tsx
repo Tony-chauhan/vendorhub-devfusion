@@ -16,7 +16,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       try {
         const res = await getCurrentUserRoleAndStore();
         setIsAdmin(res.success && res.role === 'ADMIN');
-      } catch (e) {
+      } catch {
         setIsAdmin(false);
       } finally {
         setLoading(false);

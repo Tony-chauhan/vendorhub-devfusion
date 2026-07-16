@@ -9,7 +9,7 @@ import { Home, PlusCircle, CheckSquare, ListOrdered, ArrowLeft } from 'lucide-re
 interface StoreSidebarProps {
   storeInfo: {
     name: string;
-    logo: any;
+    logo: string | null;
   } | null;
 }
 

@@ -32,6 +32,7 @@ export default function AdminStores() {
       const res = await getAllStores();
       if (res.success && res.stores) {
         setStores(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           res.stores.map((s: any) => ({
             id: s.id,
             name: s.name,
@@ -91,6 +92,7 @@ export default function AdminStores() {
               key={store.id}
               className="bg-white border border-slate-200/60 rounded-3xl p-6 sm:p-8 shadow-sm flex flex-col md:flex-row justify-between items-start md:items-end gap-6 hover:shadow-md transition-shadow duration-300"
             >
+              {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
               <StoreInfo store={store as any} />
 
               <div className="flex flex-col items-start md:items-end gap-2 pt-4 md:pt-0 shrink-0 border-t border-slate-100 md:border-t-0 w-full md:w-auto">

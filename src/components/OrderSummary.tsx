@@ -8,16 +8,15 @@ import { couponDummyData } from '@/assets/assets';
 
 interface OrderSummaryProps {
   totalPrice: number;
-  items: any[];
 }
 
-export default function OrderSummary({ totalPrice, items }: OrderSummaryProps) {
+export default function OrderSummary({ totalPrice }: OrderSummaryProps) {
   const currency = process.env.NEXT_PUBLIC_CURRENCY_SYMBOL || '$';
   const router = useRouter();
 
   // Component local states
   const [couponCodeInput, setCouponCodeInput] = useState('');
-  const [coupon, setCoupon] = useState<any>(null);
+  const [coupon, setCoupon] = useState<{ code: string; discount: number; description: string } | null>(null);
 
   const handleCouponCode = (event: React.FormEvent) => {
     event.preventDefault();

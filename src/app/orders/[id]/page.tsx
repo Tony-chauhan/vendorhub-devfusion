@@ -10,6 +10,7 @@ import {
   Store
 } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 import { forbidden, unauthorized } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser } from "@/lib/clerk-server";
@@ -75,7 +76,7 @@ export default async function OrderTrackingPage({ params }: OrderTrackingProps) 
           <AlertTriangle className="h-12 w-12 text-orange-500 animate-bounce" />
           <div className="flex flex-col gap-1">
             <h1 className="text-xl font-black text-slate-900">Order Not Found</h1>
-            <p className="text-xs text-slate-500">We couldn't retrieve order details for ID: <strong className="text-slate-750">{orderId}</strong>.</p>
+            <p className="text-xs text-slate-500">We couldn&apos;t retrieve order details for ID: <strong className="text-slate-750">{orderId}</strong>.</p>
           </div>
           <Link 
             href="/"
@@ -182,11 +183,13 @@ export default async function OrderTrackingPage({ params }: OrderTrackingProps) 
             <div className="flex flex-col gap-4">
               {order.orderItems.map((item) => (
                 <div key={item.id} className="flex gap-4 items-center">
-                  <div className="h-16 w-16 rounded-xl border border-slate-200 overflow-hidden shrink-0">
-                    <img 
+                  <div className="relative h-16 w-16 rounded-xl border border-slate-200 overflow-hidden shrink-0">
+                    <Image 
                       src={item.product?.images?.[0] || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=100&auto=format&fit=crop&q=80"} 
                       alt={item.product?.name || "Product Item"} 
-                      className="h-full w-full object-cover" 
+                      fill
+                      sizes="64px"
+                      className="object-cover" 
                     />
                   </div>
                   <div className="flex-1 flex flex-col gap-0.5 justify-center text-sm">

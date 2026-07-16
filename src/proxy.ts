@@ -18,6 +18,7 @@ const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
 // aren't a VENDOR yet. Only the post-approval operational area is role-gated.
 const isVendorAreaRoute = createRouteMatcher(["/store(.*)"]);
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export default customClerkMiddleware(async (auth: any, req: any) => {
   if (!isProtectedRoute(req)) return;
 
@@ -33,7 +34,7 @@ export default customClerkMiddleware(async (auth: any, req: any) => {
   // coverage can silently stop applying to a given route on a matcher
   // change, so nothing here should be treated as the sole guard.
   const { sessionClaims } = await auth();
-  const role = (sessionClaims as any)?.metadata?.role as string | undefined;
+  const role = (sessionClaims as { metadata?: { role?: string } })?.metadata?.role;
 
   if (role) {
     if (isAdminRoute(req) && role !== "ADMIN") {

@@ -273,6 +273,7 @@ export async function createOrder(data: CreateOrderInput) {
       requiresPayment: false as const,
     };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Server Action CreateOrder Error:", error);
     return { success: false as const, error: error.message || "Failed to process checkout on server" };

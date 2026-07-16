@@ -22,7 +22,7 @@ interface OrderItemProps {
       product: {
         id: string;
         name: string;
-        images: any[];
+        images: string[];
         category: string;
       };
       review: { id: string; rating: number; comment: string | null } | null;

@@ -10,6 +10,7 @@ import OrderItem from '@/components/OrderItem';
 import { getMyOrders } from '@/app/actions/orders';
 
 export default function OrdersPage() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -24,6 +25,7 @@ export default function OrdersPage() {
   }, []);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOrders();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [loadOrders]);
@@ -77,7 +79,7 @@ export default function OrdersPage() {
             </div>
             <h1 className="text-xl font-extrabold text-slate-800">No Orders Placed Yet</h1>
             <p className="text-xs text-slate-400 leading-relaxed font-semibold">
-              You haven't completed any transaction checkouts in this session yet. Explore the shop catalog.
+              You haven&apos;t completed any transaction checkouts in this session yet. Explore the shop catalog.
             </p>
           </div>
         )}

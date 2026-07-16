@@ -4,13 +4,14 @@ import React from 'react';
 import Title from './Title';
 import ProductCard from './ProductCard';
 import { useSelector } from 'react-redux';
+import { ProductBase } from '@/lib/features/product/productSlice';
 
 export default function LatestProducts() {
   const displayQuantity = 4;
-  const products = useSelector((state: any) => state.product?.list || []);
+  const products = useSelector((state: { product: { list: ProductBase[] } }) => state.product?.list || []);
 
   const latest = [...products]
-    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime())
     .slice(0, displayQuantity);
 
   return (
@@ -21,7 +22,7 @@ export default function LatestProducts() {
         href="/shop"
       />
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 xl:gap-8">
-        {latest.map((product: any, index: number) => (
+        {latest.map((product, index: number) => (
           <ProductCard key={product.id || index} product={product} />
         ))}
       </div>

@@ -4,10 +4,11 @@ import React from 'react';
 import Title from './Title';
 import ProductCard from './ProductCard';
 import { useSelector } from 'react-redux';
+import { ProductBase } from '@/lib/features/product/productSlice';
 
 export default function BestSelling() {
   const displayQuantity = 8;
-  const products = useSelector((state: any) => state.product?.list || []);
+  const products = useSelector((state: { product: { list: ProductBase[] } }) => state.product?.list || []);
 
   const bestSellers = [...products]
     .sort((a, b) => (b.rating?.length || 0) - (a.rating?.length || 0))
@@ -21,7 +22,7 @@ export default function BestSelling() {
         href="/shop"
       />
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 xl:gap-8">
-        {bestSellers.map((product: any, index: number) => (
+        {bestSellers.map((product, index: number) => (
           <ProductCard key={product.id || index} product={product} />
         ))}
       </div>

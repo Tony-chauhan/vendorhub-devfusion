@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { customCurrentUser as currentUser, syncClerkRoleMetadata } from "@/lib/clerk-server";
-import { isMockDb, ADMIN_EMAIL, resolveRole } from "@/lib/env";
+import { isMockDb, resolveRole } from "@/lib/env";
 import { registerVendorSchema, formatZodError } from "@/lib/validations";
 import { checkRateLimit, ACTION_RATE_LIMIT } from "@/lib/rate-limit";
 import { encryptSensitive } from "@/lib/crypto";
@@ -118,6 +118,7 @@ export async function registerVendor(data: RegisterVendorInput) {
       status: store.status,
       storeName: store.name,
     };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Server Action RegisterVendor Error:", error);
     return { success: false, error: error.message || "Failed to submit vendor application" };
@@ -178,6 +179,7 @@ export async function getCurrentUserRoleAndStore() {
       name: user.name,
       store: user.store,
     };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     console.error("Error in getCurrentUserRoleAndStore:", error);
     return { success: false, error: error.message || "Failed to fetch user role", role: "BUYER" as const, store: null };

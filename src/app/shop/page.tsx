@@ -54,10 +54,12 @@ function ShopContent() {
   }, [search, categoryParam, sortParam, minPriceParam, maxPriceParam, minRatingParam, pageParam]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchProducts();
   }, [fetchProducts]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSearchVal(search);
     setMaxPrice(maxPriceParam ? Number(maxPriceParam) : 500);
     setMinRating(minRatingParam ? Number(minRatingParam) : 0);
@@ -81,6 +83,7 @@ function ShopContent() {
         }
       });
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSynonyms([]);
     }
   }, [search]);

@@ -8,7 +8,7 @@ import { setCart } from '@/lib/features/cart/cartSlice';
 export default function CartSync() {
   const { isLoaded, isSignedIn } = useCustomUser();
   const dispatch = useDispatch();
-  const cart = useSelector((state: any) => state.cart);
+  const cart = useSelector((state: { cart: { cartItems: Record<string, number>, total: number } }) => state.cart);
   const isFirstRender = useRef(true);
   const syncInitiated = useRef(false);
 

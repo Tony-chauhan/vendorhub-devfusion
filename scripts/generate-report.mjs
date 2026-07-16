@@ -74,12 +74,6 @@ const dataRow = (cols, even = false) =>
       cell(text, { bg: even ? LIGHT_BLUE : WHITE, size: 18, width, ...opts })),
   });
 
-const checkRow = (cols, even = false) =>
-  new TableRow({
-    children: cols.map(([text, width, opts]) =>
-      cell(text, { bg: even ? LIGHT_BLUE : WHITE, size: 18, width, ...opts })),
-  });
-
 // ── document ─────────────────────────────────────────────────────────────────
 const doc = new Document({
   styles: {

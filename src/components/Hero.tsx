@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { assets } from '@/assets/assets';
-import { ArrowRight, ChevronRight, Compass, Sparkles, TrendingUp } from 'lucide-react';
+import { ArrowRight, ChevronRight, Compass, Sparkles } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Hero() {
@@ -34,8 +34,8 @@ export default function Hero() {
               </div>
 
               <h1 className="text-3xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-                Gadgets you'll <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">love</span>.<br />
-                Prices you'll <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">trust</span>.
+                Gadgets you&apos;ll <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">love</span>.<br />
+                Prices you&apos;ll <span className="bg-gradient-to-r from-purple-600 to-pink-500 bg-clip-text text-transparent">trust</span>.
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-500 max-w-sm leading-relaxed">

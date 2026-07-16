@@ -15,7 +15,7 @@ export default function Navbar() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
   const [showDropdown, setShowDropdown] = useState(false);
 
-  const cartCount = useSelector((state: any) => state.cart?.total || 0);
+  const cartCount = useSelector((state: { cart: { total: number } }) => state.cart?.total || 0);
   const { isSignedIn, user } = useCustomUser();
   const [userRole, setUserRole] = useState<string>('BUYER');
   const [storeStatus, setStoreStatus] = useState<string | null>(null);
@@ -25,11 +25,13 @@ export default function Navbar() {
   // once mounted client-side to avoid a hydration mismatch on that first paint.
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   useEffect(() => {
     if (!isSignedIn) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUserRole('BUYER');
       setStoreStatus(null);
       return;

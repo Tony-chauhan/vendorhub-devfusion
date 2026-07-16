@@ -11,7 +11,8 @@ import { getCurrentUserRoleAndStore } from '@/app/actions/vendors';
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   const [isSeller, setIsSeller] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [storeInfo, setStoreInfo] = useState<any>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [storeInfo, setStoreInfo] = useState<any | null>(null);
   const [storeStatus, setStoreStatus] = useState<string | null>(null);
   const router = useRouter();
 
@@ -70,7 +71,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="flex flex-col gap-2">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Application Under Review</h1>
             <p className="text-slate-550 text-xs leading-relaxed font-semibold">
-              Your store <strong className="text-indigo-600">"{storeInfo?.name}"</strong> is currently awaiting administrative approval. Once approved, the full seller dashboard will unlock.
+              Your store <strong className="text-indigo-600">&quot;{storeInfo?.name}&quot;</strong> is currently awaiting administrative approval. Once approved, the full seller dashboard will unlock.
             </p>
           </div>
 
@@ -102,7 +103,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="flex flex-col gap-2">
             <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-900">Application Rejected</h1>
             <p className="text-slate-550 text-xs leading-relaxed font-semibold">
-              Unfortunately, your application for <strong className="text-rose-600">"{storeInfo?.name}"</strong> did not pass our hyperlocal verification audits. Please contact support.
+              Unfortunately, your application for <strong className="text-rose-600">&quot;{storeInfo?.name}&quot;</strong> did not pass our hyperlocal verification audits. Please contact support.
             </p>
           </div>
 

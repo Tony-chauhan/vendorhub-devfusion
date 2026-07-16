@@ -3,9 +3,9 @@
 import React, { useState, useTransition } from 'react';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { PlusCircle, Upload, Sparkles, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
+import { PlusCircle, Upload, Sparkles, RefreshCw, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { assets } from '@/assets/assets';
+
 import { getAIPriceSuggestions } from '@/app/actions/ai';
 import { addProduct } from '@/app/actions/products';
 import { categories } from '@/assets/assets';
@@ -32,6 +32,7 @@ export default function StoreAddProduct() {
     category: '',
   });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [aiSuggestions, setAiSuggestions] = useState<any>(null);
 
   const onChangeHandler = (
@@ -255,7 +256,7 @@ export default function StoreAddProduct() {
                   💡 Demand insight: {aiSuggestions.localMarketInsights}
                 </p>
                 <div className="p-3 bg-white border border-slate-150 rounded-2xl font-bold text-slate-600 italic">
-                  "{aiSuggestions.marketingCopy}"
+                  &quot;{aiSuggestions.marketingCopy}&quot;
                 </div>
               </div>
 
@@ -270,7 +271,7 @@ export default function StoreAddProduct() {
             </div>
           ) : (
             <p className="text-[10px] text-slate-400 leading-relaxed font-semibold">
-              Enter product name and select a category, then click "Activate Analysis". Gemini AI will analyze the competitive hyperlocal market and suggest price parameters, a persuasive description copy, and SEO hashtags.
+              Enter product name and select a category, then click &quot;Activate Analysis&quot;. Gemini AI will analyze the competitive hyperlocal market and suggest price parameters, a persuasive description copy, and SEO hashtags.
             </p>
           )}
         </div>

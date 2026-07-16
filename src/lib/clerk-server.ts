@@ -38,6 +38,8 @@ export async function syncClerkRoleMetadata(
 /**
  * 🔒 Safe clerkMiddleware helper - delegated directly to real Clerk
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function customClerkMiddleware(callback?: any) {
-  return ClerkServer.clerkMiddleware(callback);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return ClerkServer.clerkMiddleware(callback as any);
 }
