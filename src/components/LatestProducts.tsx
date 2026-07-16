@@ -1,28 +1,54 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Title from './Title';
 import ProductCard from './ProductCard';
-import { useSelector } from 'react-redux';
-import { ProductBase } from '@/lib/features/product/productSlice';
+import { searchProducts, type CatalogProduct } from '@/app/actions/products';
 
 export default function LatestProducts() {
   const displayQuantity = 4;
-  const products = useSelector((state: { product: { list: ProductBase[] } }) => state.product?.list || []);
+  const [products, setProducts] = useState<CatalogProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const latest = [...products]
-    .sort((a, b) => new Date(b.createdAt as string).getTime() - new Date(a.createdAt as string).getTime())
-    .slice(0, displayQuantity);
+  useEffect(() => {
+    searchProducts({ sort: 'default', limit: displayQuantity, page: 1 })
+      .then((result) => {
+        if (result.success) {
+          setProducts(result.products);
+        }
+      })
+      .finally(() => setLoading(false));
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="px-4 sm:px-6 lg:px-8 my-16 sm:my-24 max-w-7xl mx-auto">
+        <Title
+          title="Latest Products"
+          description="Loading our most recent catalog arrivals…"
+          href="/shop"
+        />
+        <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 xl:gap-8">
+          {Array.from({ length: displayQuantity }).map((_, i) => (
+            <div
+              key={i}
+              className="animate-pulse bg-slate-200/60 rounded-2xl aspect-square"
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="px-4 sm:px-6 lg:px-8 my-16 sm:my-24 max-w-7xl mx-auto">
       <Title
         title="Latest Products"
-        description={`Displaying ${Math.min(products.length, displayQuantity)} of our most recent catalog arrivals`}
+        description={`Displaying ${products.length} of our most recent catalog arrivals`}
         href="/shop"
       />
       <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6 xl:gap-8">
-        {latest.map((product, index: number) => (
+        {products.map((product, index: number) => (
           <ProductCard key={product.id || index} product={product} />
         ))}
       </div>
