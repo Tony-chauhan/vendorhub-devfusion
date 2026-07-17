@@ -85,7 +85,7 @@ export async function getCurrentUserProfile(): Promise<
       }
 
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
-      let initialRole = resolveRole(email);
+      let initialRole: "BUYER" | "VENDOR" | "ADMIN" = resolveRole(email);
       const intentRole = clerkUser.unsafeMetadata?.registrationIntent as string;
       if (initialRole === "BUYER" && intentRole === "VENDOR") {
         initialRole = "VENDOR";
