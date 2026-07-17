@@ -70,8 +70,13 @@ export async function getCurrentUserProfile(): Promise<
       }
 
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
-      user = await prisma.user.create({
-        data: {
+      user = await prisma.user.upsert({
+        where: { email },
+        update: {
+          clerkId: clerkUser.id,
+          name,
+        },
+        create: {
           clerkId: clerkUser.id,
           email,
           name,

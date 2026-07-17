@@ -160,8 +160,13 @@ export async function getCurrentUserRoleAndStore() {
       const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
       const role = resolveRole(email);
 
-      user = await prisma.user.create({
-        data: {
+      user = await prisma.user.upsert({
+        where: { email },
+        update: {
+          clerkId: clerkUser.id,
+          name,
+        },
+        create: {
           clerkId: clerkUser.id,
           email,
           name,

@@ -96,8 +96,13 @@ export async function createOrder(data: CreateOrderInput) {
         return { success: false as const, error: "No email address found on account" };
       }
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
-      user = await prisma.user.create({
-        data: {
+      user = await prisma.user.upsert({
+        where: { email },
+        update: {
+          clerkId: clerkUser.id,
+          name,
+        },
+        create: {
           clerkId: clerkUser.id,
           email,
           name,
@@ -521,8 +526,13 @@ export async function getMyOrders() {
         return { success: false as const, error: "No email address found on account", orders: [] };
       }
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
-      user = await prisma.user.create({
-        data: {
+      user = await prisma.user.upsert({
+        where: { email },
+        update: {
+          clerkId: clerkUser.id,
+          name,
+        },
+        create: {
           clerkId: clerkUser.id,
           email,
           name,
