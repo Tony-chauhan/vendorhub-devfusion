@@ -12,6 +12,8 @@ interface ProductPageProps {
   params: Promise<{ id: string }>;
 }
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { id } = await params;
   const result = await getProductById(id);
@@ -52,7 +54,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <div className="flex flex-col justify-center items-center py-24 space-y-4">
             <PackageX className="w-10 h-10 text-slate-300" />
             <p className="text-xs font-extrabold text-slate-400 tracking-widest uppercase">
-              Product Not Found
+              Product Not Found: {result.error}
             </p>
             <Link
               href="/shop"

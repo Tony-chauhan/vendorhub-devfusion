@@ -43,6 +43,7 @@ export async function registerVendor(data: RegisterVendorInput) {
 
     if (isMockDb()) {
       console.info("[VendorHub] Database is in zero-config Mock Mode. Simulating store registration.");
+      await syncClerkRoleMetadata(clerkUser.id, "VENDOR");
       return {
         success: true,
         storeId: `mock_store_${Math.floor(100000 + Math.random() * 900000)}`,
@@ -91,7 +92,7 @@ export async function registerVendor(data: RegisterVendorInput) {
         description: validData.description,
         logo: validData.logo || "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80",
         location: validData.location,
-        status: "PENDING", // Always PENDING initially, requires ADMIN approval
+        status: "APPROVED", // Auto-approve for the demo so vendors get full access immediately
         vendorId: user.id,
         gstNumber: validData.gstNumber || null,
         panNumber: validData.panNumber,
@@ -140,12 +141,43 @@ export async function getCurrentUserRoleAndStore() {
     if (isMockDb()) {
       const email = clerkUser.emailAddresses?.[0]?.emailAddress || "";
       const name = clerkUser.fullName || `${clerkUser.firstName || ""} ${clerkUser.lastName || ""}`.trim();
+      
+      const metadataRole = clerkUser.publicMetadata?.role as string;
+      const intentRole = clerkUser.unsafeMetadata?.registrationIntent as string;
+      
+      let role = resolveRole(email) as "BUYER" | "VENDOR" | "ADMIN";
+      if (metadataRole === "VENDOR" || metadataRole === "ADMIN") {
+        role = metadataRole as "BUYER" | "VENDOR" | "ADMIN";
+      } else if (role === "BUYER" && intentRole === "VENDOR") {
+        role = "VENDOR";
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const store: any = role === "VENDOR" ? {
+        id: "mock_store_123",
+        name: "Mock Vendor Store",
+        description: "A simulated store for mock mode",
+        logo: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150",
+        address: "123 Mock Street",
+        status: "APPROVED",
+        location: "Mock City",
+        vendorId: clerkUser.id,
+        gstNumber: null,
+        panNumber: "MOCKPAN123",
+        bankAccountNumber: "MOCK1234",
+        bankIfsc: "MOCK0001",
+        verificationStatus: "VERIFIED",
+        verificationNotes: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      } : null;
+
       return {
         success: true,
-        role: resolveRole(email) as "BUYER" | "VENDOR" | "ADMIN",
+        role,
         email,
         name,
-        store: null,
+        store,
       };
     }
 

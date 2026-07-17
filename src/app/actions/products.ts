@@ -451,6 +451,8 @@ export async function getProductsByIds(ids: string[]): Promise<
       return { success: true, products };
     }
 
+    console.log("getProductsByIds CALLED WITH:", ids);
+
     const rows = await prisma.product.findMany({
       where: { id: { in: ids } },
       include: {
@@ -459,9 +461,11 @@ export async function getProductsByIds(ids: string[]): Promise<
       },
     });
 
+    console.log("getProductsByIds FOUND:", rows.length, "rows from DB");
     return { success: true, products: rows.map(mapDbToCatalog) };
   } catch (error: unknown) {
-    const message = error instanceof Error ? (error instanceof Error ? error.message : String(error)) : "Failed to load products";
+    console.error("getProductsByIds Error:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return { success: false, error: message, products: [] };
   }
 }

@@ -25,13 +25,28 @@ export interface UserProfile {
 
 function buildMockProfile(clerkUser: NonNullable<Awaited<ReturnType<typeof currentUser>>>): UserProfile {
   const email = clerkUser.emailAddresses?.[0]?.emailAddress ?? "";
+  const metadataRole = clerkUser.publicMetadata?.role as string;
+  const intentRole = clerkUser.unsafeMetadata?.registrationIntent as string;
+  
+  let role = resolveRole(email) as UserRole;
+  if (metadataRole === "VENDOR" || metadataRole === "ADMIN") {
+    role = metadataRole as UserRole;
+  } else if (role === "BUYER" && intentRole === "VENDOR") {
+    role = "VENDOR";
+  }
+
   return {
-    id: "mock_user_id",
+    id: clerkUser.id,
     email,
     name: (clerkUser.fullName ?? `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim()) || null,
-    role: resolveRole(email),
+    role,
     createdAt: new Date().toISOString(),
-    store: null,
+    store: role === "VENDOR" ? {
+      id: "mock_store_123",
+      name: "Mock Vendor Store",
+      status: "APPROVED",
+      location: "Mock City"
+    } : null,
   };
 }
 
@@ -70,6 +85,12 @@ export async function getCurrentUserProfile(): Promise<
       }
 
       const name = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim() || null;
+      let initialRole = resolveRole(email);
+      const intentRole = clerkUser.unsafeMetadata?.registrationIntent as string;
+      if (initialRole === "BUYER" && intentRole === "VENDOR") {
+        initialRole = "VENDOR";
+      }
+
       user = await prisma.user.upsert({
         where: { email },
         update: {
@@ -80,7 +101,7 @@ export async function getCurrentUserProfile(): Promise<
           clerkId: clerkUser.id,
           email,
           name,
-          role: resolveRole(email),
+          role: initialRole,
         },
         include: {
           store: {
@@ -88,6 +109,31 @@ export async function getCurrentUserProfile(): Promise<
           },
         },
       });
+
+      if (user.role === "VENDOR" && !user.store) {
+        // Auto-create store for demo purposes so they get full access immediately
+        const store = await prisma.store.create({
+          data: {
+            name: `${name || "New Vendor"}'s Store`,
+            description: "A new store on VendorHub",
+            logo: "https://images.unsplash.com/photo-1542838132-92c53300491e?w=150&auto=format&fit=crop&q=80",
+            location: "Bangalore",
+            status: "APPROVED",
+            vendorId: user.id,
+            panNumber: "ABCDE1234F",
+            bankAccountNumber: "U2FsdGVkX19dummydata", // dummy encrypted data
+            bankIfsc: "HDFC0001234",
+            verificationStatus: "VERIFIED",
+          }
+        });
+        
+        user.store = {
+          id: store.id,
+          name: store.name,
+          status: store.status,
+          location: store.location
+        };
+      }
     }
 
     return {
@@ -171,7 +217,7 @@ export async function completeRegistration(intent: RegistrationIntent): Promise<
     return { success: false, error: profileResult.error };
   }
 
-  const redirectTo = intent === "VENDOR" ? "/vendor/register" : "/";
+  const redirectTo = intent === "VENDOR" ? "/store" : "/";
   return { success: true, redirectTo };
 }
 
